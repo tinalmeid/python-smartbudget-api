@@ -1,0 +1,101 @@
+name: CI — python-smartbudget-api
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: 📡 SonarCloud Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixar o código-fonte do repositório
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Configurar Python 3.12 e cache de dependências
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # 3. Instalar dependências e rodar testes
+      - name: 📦 Instalar Dependências
+        run: |
+          pip install pytest pytest-asyncio pytest-cov httpx
+          for svc in svc-usuarios svc-orcamento svc-previsao svc-notificacoes; do
+            pip install -r $svc/requirements.txt
+          done
+
+      # 4. Rodar testes e gerar relatório de cobertura
+      - name: 🧪 Rodar testes e gerar coverage.xml
+        run: |
+          if find . -name "test_*.py" | grep -q .; then
+            pytest
+          else
+            echo "🏷️ Sem testes ainda — ARQ-453 setup only. Task ARQ-556 deve rodar automaticamente"
+          fi
+
+      # 5. Analisar código com SonarCloud
+      - name: 📊 Análise SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    # Só roda o deploy se os testes passarem e for na branch main
+    # 6. Deploy para AWS usando ECR e EC2
+    name: 🚀 Deploy para AWS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 7. Configurar AWS CLI com credenciais seguras
+      - name: 🛠️ Configurar AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # 8. Login no ECR para poder pushar as imagens Docker
+      - name: 🖥️ Login no ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 9. Build e push das imagens Docker para o ECR
+      - name: 🏗️ Build e push das imagens
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          for svc in svc-usuarios svc-orcamento svc-previsao svc-notificacoes; do
+            docker build -t $ECR_REGISTRY/smartbudget-$svc:$IMAGE_TAG ./$svc
+            docker push $ECR_REGISTRY/smartbudget-$svc:$IMAGE_TAG
+            docker tag $ECR_REGISTRY/smartbudget-$svc:$IMAGE_TAG \
+                       $ECR_REGISTRY/smartbudget-$svc:latest
+            docker push $ECR_REGISTRY/smartbudget-$svc:latest
+          done
+
+      # 10. Conectar via SSH na instância EC2 e atualizar os containers Docker
+      - name: 🚀 Deploy no EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /app/python-smartbudget-api
+            docker compose pull
+            docker compose up -d --remove-orphans
+            sleep 15
+            for port in 8001 8002 8003 8004; do
+              curl -f http://localhost:$port/health || exit 1
+            done

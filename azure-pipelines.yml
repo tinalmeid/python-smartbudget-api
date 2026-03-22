@@ -1,0 +1,368 @@
+# azure-pipelines.yml
+# yaml-language-server: $schema=off
+# ===================================================================================
+# OBJETIVO       : Pipeline de CI para o python-smartbudget-api.
+#                  Detecta Python via requirements.txt nos microsserviços,
+#                  roda testes com cobertura >= 80% e envia métricas de
+#                  observabilidade para Datadog, Loki e Prometheus.
+#
+# SUPORTE        : Python 3.12 (monorepo com 4 microsserviços)
+# QUALIDADE      : SonarCloud (cobertura + análise estática)
+# OBSERVABILIDADE: Datadog + Loki (Grafana Cloud) + Prometheus Pushgateway
+#
+# AUTOR          : Cristina de Almeida
+# DATA           : Março de 2026
+# VERSION        : 1.0.0
+# ===================================================================================
+
+# -----------------------------------------------------------------------------------
+# GATILHO: Executa em pushes e PRs para a branch main
+# -----------------------------------------------------------------------------------
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+# -----------------------------------------------------------------------------------
+# AGENTE: Ubuntu gratuito (Azure Free Tier)
+# -----------------------------------------------------------------------------------
+pool:
+  vmImage: 'ubuntu-latest'
+
+# ===================================================================================
+# VARIÁVEIS GLOBAIS
+# ===================================================================================
+variables:
+  # ---------------------------------------------------------------------------------
+  # VARIABLE GROUP — segredos gerenciados na Library do Azure DevOps
+  # Caminho: Pipelines > Library > DATADOG_API_KEY > Pipeline permissions
+  # ---------------------------------------------------------------------------------
+  - group: DATADOG_API_KEY
+
+  # --- SonarCloud ---
+  - name: SONAR_ORGANIZATION
+    value: 'tinalmeid'
+
+  - name: SONAR_PROJECT_KEY
+    value: 'tinalmeid_python-smartbudget-api'
+
+  - name: SONAR_PROJECT_NAME
+    value: 'python-smartbudget-api'
+
+  - name: SONAR_SERVICE_CONNECTION
+    value: 'SonarCloud-Service-Connection'
+
+  # --- Python ---
+  - name: PYTHON_VERSION
+    value: '3.12'
+
+  # --- Flags de linguagem ---
+  - name: isPython
+    value: 'false'
+
+  # --- Observabilidade ---
+  - name: DATADOG_API_URL
+    value: 'https://api.datadoghq.com/api/v1/series'
+
+  - name: LOKI_URL
+    value: 'http://seu-loki:3100'
+
+  - name: PUSHGATEWAY_URL
+    value: 'http://seu-pushgateway:9091'
+
+  - name: OBS_JOB_NAME
+    value: 'azure-pipeline'
+
+# ===================================================================================
+# JOB PRINCIPAL
+# ===================================================================================
+jobs:
+- job: SmartBuild
+  displayName: '🤖 Build & Quality — python-smartbudget-api'
+
+  steps:
+
+    # ===============================================================================
+    # PASSO 0 — CHECKOUT
+    # fetch-depth: 0 é OBRIGATÓRIO para o SonarCloud calcular "New Code".
+    # ===============================================================================
+    - checkout: self
+      fetchDepth: 0
+      displayName: '📥 Checkout do Código (histórico completo)'
+
+    # ===============================================================================
+    # PASSO 0b — CAPTURAR TIMESTAMP DE INÍCIO
+    # Salva o epoch Unix para calcular a duração total do pipeline no Passo 7.
+    # ===============================================================================
+    - script: |
+        echo "##vso[task.setvariable variable=PIPELINE_START_TIME]$(date +%s)"
+        echo "⏱️  Timestamp de início registrado: $(date +%s)"
+      displayName: '⏱️  Registrar Início do Pipeline'
+
+    # ===============================================================================
+    # PASSO 1 — DETECÇÃO DA LINGUAGEM
+    # Monorepo: os requirements.txt ficam dentro de cada svc-*/
+    # Detecta Python se qualquer serviço tiver requirements.txt
+    # ===============================================================================
+    - script: |
+        echo "🔍 Inspecionando arquivos do repositório..."
+
+        if find . -name "requirements.txt" -not -path "*/__pycache__/*" | grep -q .; then
+          echo "✅ Linguagem detectada: Python (monorepo com microsserviços)"
+          echo "##vso[task.setvariable variable=isPython]true"
+        else
+          echo "⚠️  Nenhum requirements.txt encontrado — ARQ-453 setup only"
+          echo "##vso[task.setvariable variable=isPython]true"
+        fi
+      displayName: '🔍 Detectar Linguagem do Repositório'
+
+    # ===============================================================================
+    # PASSO 2 — CONFIGURAR PYTHON 3.12
+    # ===============================================================================
+    - task: UsePythonVersion@0
+      condition: eq(variables['isPython'], 'true')
+      inputs:
+        versionSpec: '$(PYTHON_VERSION)'
+        addToPath: true
+      displayName: '🐍 Configurar Python $(PYTHON_VERSION)'
+
+    # ===============================================================================
+    # PASSO 3 — INSTALAR DEPENDÊNCIAS
+    # Instala requirements.txt de cada microsserviço + libs de teste.
+    # Se ainda não existirem (ARQ-453 setup), segue sem falhar.
+    # ===============================================================================
+    - script: |
+        echo "📦 Verificando dependências dos microsserviços..."
+        pip install --upgrade pip
+
+        FOUND=0
+        for svc in svc-usuarios svc-orcamento svc-previsao svc-notificacoes; do
+          if [ -f "$svc/requirements.txt" ]; then
+            echo "  → Instalando $svc/requirements.txt"
+            pip install -r $svc/requirements.txt
+            FOUND=1
+          fi
+        done
+
+        if [ $FOUND -eq 0 ]; then
+          echo "⚠️  Nenhum requirements.txt encontrado — ARQ-453 setup only"
+        fi
+
+        echo "📦 Instalando libs de teste..."
+        pip install pytest pytest-asyncio pytest-cov httpx
+      condition: eq(variables['isPython'], 'true')
+      displayName: '📦 Instalar Dependências (4 microsserviços)'
+
+    # ===============================================================================
+    # PASSO 4 — TESTES + COBERTURA
+    # Se não houver testes ainda (ARQ-453), exibe aviso e segue sem falhar.
+    # A partir da ARQ-456, os testes existem e a cobertura >= 80% é exigida.
+    # ===============================================================================
+    - script: |
+        echo "🧪 Verificando testes..."
+
+        if find . -name "test_*.py" | grep -q .; then
+          echo "✅ Testes encontrados. Rodando com cobertura mínima de 80%..."
+          pytest \
+            --cov=svc-usuarios/app \
+            --cov=svc-orcamento/app \
+            --cov=svc-previsao/app \
+            --cov=svc-notificacoes/app \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            --cov-fail-under=80 \
+            -v
+        else
+          echo "⚠️  Sem testes ainda — ARQ-453 setup only"
+          echo "ℹ️  Testes serão implementados a partir da ARQ-456"
+        fi
+      condition: eq(variables['isPython'], 'true')
+      displayName: '🧪 Testes Unitários + Cobertura >= 80%'
+
+    # ===============================================================================
+    # PASSO 5 — SONARCLOUD
+    # Análise estática: bugs, vulnerabilidades, code smells e cobertura
+    # ===============================================================================
+    - task: SonarCloudPrepare@2
+      condition: eq(variables['isPython'], 'true')
+      inputs:
+        SonarCloud: '$(SONAR_SERVICE_CONNECTION)'
+        organization: '$(SONAR_ORGANIZATION)'
+        scannerMode: 'CLI'
+        configMode: 'manual'
+        cliProjectKey: '$(SONAR_PROJECT_KEY)'
+        cliProjectName: '$(SONAR_PROJECT_NAME)'
+        extraProperties: |
+          sonar.python.version=3.12
+          sonar.sources=svc-usuarios/app,svc-orcamento/app,svc-previsao/app,svc-notificacoes/app
+          sonar.tests=svc-usuarios/app/tests,svc-orcamento/app/tests,svc-previsao/app/tests,svc-notificacoes/app/tests
+          sonar.python.coverage.reportPaths=coverage.xml
+          sonar.exclusions=**/migrations/**,**/__pycache__/**,**/__init__.py
+      displayName: '☁️  SonarCloud — Preparar Análise'
+
+    - task: SonarCloudAnalyze@2
+      condition: eq(variables['isPython'], 'true')
+      displayName: '☁️  SonarCloud — Executar Análise'
+
+    - task: SonarCloudPublish@2
+      condition: eq(variables['isPython'], 'true')
+      inputs:
+        pollingTimeoutSec: '300'
+      displayName: '☁️  SonarCloud — Publicar Quality Gate'
+
+    # ===============================================================================
+    # PASSO 7a — OBSERVABILIDADE: SUCESSO
+    # Envia métricas para Datadog, logs para Loki e métricas para Prometheus.
+    # || true garante que falha de observabilidade não quebra o pipeline.
+    # ===============================================================================
+    - script: |
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - $(PIPELINE_START_TIME)))
+        TIMESTAMP=$(date +%s)
+        BRANCH="$(Build.SourceBranchName)"
+        PROJECT="$(System.TeamProject)"
+
+        echo "✅ Build concluído em ${DURATION}s. Enviando métricas..."
+
+        # ------------------------------------------------------------------
+        # 1. DATADOG — métricas de saúde do pipeline
+        # ------------------------------------------------------------------
+        curl --silent --fail-with-body \
+          -X POST "$(DATADOG_API_URL)" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: $DD_API_KEY" \
+          -d "{
+            \"series\": [
+              {
+                \"metric\": \"smartbudget.pipeline.success\",
+                \"points\": [[$TIMESTAMP, 1]],
+                \"tags\": [\"project:$PROJECT\", \"branch:$BRANCH\", \"language:python\"]
+              },
+              {
+                \"metric\": \"smartbudget.pipeline.duration_seconds\",
+                \"points\": [[$TIMESTAMP, $DURATION]],
+                \"tags\": [\"project:$PROJECT\", \"branch:$BRANCH\", \"language:python\"]
+              }
+            ]
+          }" \
+          && echo "📡 Datadog: métricas enviadas." \
+          || echo "⚠️  Datadog: falha ao enviar métricas (não crítico)."
+
+        # ------------------------------------------------------------------
+        # 2. LOKI — log de sucesso (visível no Grafana)
+        # ------------------------------------------------------------------
+        LOKI_TIMESTAMP="${TIMESTAMP}000000000"
+
+        curl --silent --fail-with-body \
+          -X POST "$(LOKI_URL)/loki/api/v1/push" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"streams\": [{
+              \"stream\": {
+                \"job\":      \"$(OBS_JOB_NAME)\",
+                \"project\":  \"$PROJECT\",
+                \"branch\":   \"$BRANCH\",
+                \"nivel\":    \"info\",
+                \"status\":   \"success\"
+              },
+              \"values\": [[
+                \"$LOKI_TIMESTAMP\",
+                \"[SUCCESS] Pipeline concluído em ${DURATION}s | Build=$(Build.BuildId) | Commit=$(Build.SourceVersion)\"
+              ]]
+            }]
+          }" \
+          && echo "📋 Loki: log de sucesso enviado." \
+          || echo "⚠️  Loki: falha ao enviar log (não crítico)."
+
+        # ------------------------------------------------------------------
+        # 3. PROMETHEUS PUSHGATEWAY — métricas de negócio
+        # ------------------------------------------------------------------
+        cat <<PROMEOF | curl --silent --fail-with-body \
+          --data-binary @- \
+          "$(PUSHGATEWAY_URL)/metrics/job/$(OBS_JOB_NAME)/instance/$PROJECT"
+
+        # HELP smartbudget_pipeline_success Resultado do pipeline (1=sucesso 0=falha)
+        # TYPE smartbudget_pipeline_success gauge
+        smartbudget_pipeline_success{branch="$BRANCH",project="$PROJECT"} 1
+
+        # HELP smartbudget_pipeline_duration_seconds Duração total do pipeline
+        # TYPE smartbudget_pipeline_duration_seconds gauge
+        smartbudget_pipeline_duration_seconds{branch="$BRANCH",project="$PROJECT"} $DURATION
+        PROMEOF
+
+        echo "📊 Pushgateway: métricas enviadas ao Prometheus." \
+          || echo "⚠️  Pushgateway: falha ao enviar métricas (não crítico)."
+
+      condition: succeeded()
+      displayName: '📡 Observabilidade — Sucesso (Datadog + Loki + Prometheus)'
+      env:
+        DD_API_KEY: $(DATADOG_API_KEY)
+
+    # ===============================================================================
+    # PASSO 7b — OBSERVABILIDADE: FALHA
+    # Silêncio não é OK em observabilidade — falha também gera sinal.
+    # ===============================================================================
+    - script: |
+        TIMESTAMP=$(date +%s)
+        LOKI_TIMESTAMP="${TIMESTAMP}000000000"
+        BRANCH="$(Build.SourceBranchName)"
+        PROJECT="$(System.TeamProject)"
+
+        echo "❌ Build falhou. Enviando alertas..."
+
+        # Datadog — métrica de falha
+        curl --silent \
+          -X POST "$(DATADOG_API_URL)" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: $DD_API_KEY" \
+          -d "{
+            \"series\": [{
+              \"metric\": \"smartbudget.pipeline.failure\",
+              \"points\": [[$TIMESTAMP, 1]],
+              \"tags\": [\"project:$PROJECT\", \"branch:$BRANCH\", \"language:python\"]
+            }]
+          }" \
+          && echo "📡 Datadog: alerta de falha enviado." \
+          || echo "##[warning] Datadog: falha ao enviar alerta."
+
+        # Loki — log de falha
+        curl --silent \
+          -X POST "$(LOKI_URL)/loki/api/v1/push" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"streams\": [{
+              \"stream\": {
+                \"job\":      \"$(OBS_JOB_NAME)\",
+                \"project\":  \"$PROJECT\",
+                \"branch\":   \"$BRANCH\",
+                \"nivel\":    \"error\",
+                \"status\":   \"failure\"
+              },
+              \"values\": [[
+                \"$LOKI_TIMESTAMP\",
+                \"[FAILURE] Pipeline falhou | Build=$(Build.BuildId) | Commit=$(Build.SourceVersion)\"
+              ]]
+            }]
+          }" \
+          && echo "📋 Loki: log de falha enviado." \
+          || echo "⚠️  Loki: falha ao enviar log."
+
+        # Prometheus — métrica de falha
+        printf '# HELP smartbudget_pipeline_success Resultado do pipeline\n# TYPE smartbudget_pipeline_success gauge\nsmartbudget_pipeline_success{branch="%s",project="%s"} 0\n' \
+          "$BRANCH" "$PROJECT" \
+          | curl --silent --data-binary @- \
+            "$(PUSHGATEWAY_URL)/metrics/job/$(OBS_JOB_NAME)/instance/$PROJECT" \
+          && echo "📊 Pushgateway: métrica de falha enviada." \
+          || echo "##[warning] Pushgateway: falha ao enviar métrica."
+
+      condition: failed()
+      displayName: '🚨 Observabilidade — Falha (Datadog + Loki + Prometheus)'
+      env:
+        DD_API_KEY: $(DATADOG_API_KEY)
+
+# @file Fim do arquivo azure-pipelines.yml

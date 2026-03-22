@@ -1,0 +1,26 @@
+# CODEOWNERS — python-smartbudget-api
+
+## Regra Geral: A Cristina revisa absolutamente tudo por padrão
+
+> Tech Lead e/ou Especialista responsável do projeto
+
+* @tinalmeid
+
+## CI/CD e Infra: Alterações em pipelines exigem o olhar da coordenação e DevOps
+
+> Equipe SRE
+
+/.github/workflows/ @tinalmeid
+/infra/             @tinalmeid
+
+## Ciência de Dados: Alterações em modelos e limpeza de dados
+
+> Equipe de Dados
+
+/data/              @tinalmeid
+
+## Documentação: Alterações em manuais podem ser revisadas por qualquer um do time
+
+> Time de Desenvolvimento
+
+/docs/              @tinalmeid

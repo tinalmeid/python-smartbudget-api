@@ -1,0 +1,73 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# ── Ambientes virtuais ─────────────────────────────────────────────────────────
+.env
+.venv
+venv/
+ENV/
+env/
+
+# ── Variáveis de ambiente (NUNCA commitar!) ────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Testes e cobertura ─────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+nosetests.xml
+
+# ── ML / MLflow / Prophet ──────────────────────────────────────────────────────
+*.pkl
+*.joblib
+mlruns/
+mlartifacts/
+.mlflow/
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.docker/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── AWS ───────────────────────────────────────────────────────────────────────
+.aws/credentials
+
+# ── SonarCloud ────────────────────────────────────────────────────────────────
+.scannerwork/
+
+# ── Dados temporários ─────────────────────────────────────────────────────────
+data/raw/
+data/processed/
+*.csv
+!svc-*/app/tests/fixtures/*.csv
