@@ -13,12 +13,12 @@ jobs:
 
     steps:
       # 1. Baixar o código-fonte do repositório
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
       # 2. Configurar Python 3.12 e cache de dependências
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5.4.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -46,7 +46,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
+        with:
+          args: >
+            -Dsonar.python.version=3.12
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main'
@@ -55,7 +57,9 @@ jobs:
     name: 🚀 Deploy para AWS
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
 
       # 7. Configurar AWS CLI com credenciais seguras
       - name: 🛠️ Configurar AWS
