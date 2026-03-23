@@ -152,7 +152,7 @@ Consulte os guias em `docs/`:
 
 | ID | Task | Branch | Status |
 | --- | --- | --- | --- |
-| **ARQ-453** | 🏗️ Setup repositório e SonarCloud | `ARQ-453-chore/setup-repo-sonarcloud` | 🔄 Em Andamento |
+| **ARQ-453** | 🏗️ Setup repositório e SonarCloud | `ARQ-453-chore/setup-repo-sonarcloud` | ✅ Concluído |
 | **ARQ-454** | 🐳 Docker Compose base | `ARQ-454-chore/docker-compose-base` | 📝 A Fazer |
 | **ARQ-455** | 🔐 svc-usuarios — JWT | `ARQ-455-feat/svc-usuarios-jwt` | 📝 A Fazer |
 | **ARQ-456** | 🧪 Testes svc-usuarios | `ARQ-456-test/svc-usuarios-auth` | 📝 A Fazer |

@@ -188,28 +188,20 @@ jobs:
     # PASSO 5 — SONARCLOUD
     # Análise estática: bugs, vulnerabilidades, code smells e cobertura
     # ===============================================================================
-    - task: SonarCloudPrepare@3
+    - task: SonarCloudPrepare@4
       condition: eq(variables['isPython'], 'true')
       inputs:
         SonarCloud: '$(SONAR_SERVICE_CONNECTION)'
         organization: '$(SONAR_ORGANIZATION)'
         scannerMode: 'CLI'
-        configMode: 'manual'
-        cliProjectKey: '$(SONAR_PROJECT_KEY)'
-        cliProjectName: '$(SONAR_PROJECT_NAME)'
-        extraProperties: |
-          sonar.python.version=3.12
-          sonar.sources=svc-usuarios/app,svc-orcamento/app,svc-previsao/app,svc-notificacoes/app
-          sonar.tests=svc-usuarios/app/tests,svc-orcamento/app/tests,svc-previsao/app/tests,svc-notificacoes/app/tests
-          sonar.python.coverage.reportPaths=coverage.xml
-          sonar.exclusions=**/migrations/**,**/__pycache__/**,**/__init__.py
+        configMode: 'file'
       displayName: '☁️  SonarCloud — Preparar Análise'
 
-    - task: SonarCloudAnalyze@3
+    - task: SonarCloudAnalyze@4
       condition: eq(variables['isPython'], 'true')
       displayName: '☁️  SonarCloud — Executar Análise'
 
-    - task: SonarCloudPublish@3
+    - task: SonarCloudPublish@4
       condition: eq(variables['isPython'], 'true')
       inputs:
         pollingTimeoutSec: '300'
