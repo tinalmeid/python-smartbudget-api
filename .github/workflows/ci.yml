@@ -13,12 +13,12 @@ jobs:
 
     steps:
       # 1. Baixar o código-fonte do repositório
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
       # 2. Configurar Python 3.12 e cache de dependências
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5.4.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -26,10 +26,16 @@ jobs:
       # 3. Instalar dependências e rodar testes
       - name: 📦 Instalar Dependências
         run: |
-          pip install pytest pytest-asyncio pytest-cov httpx
+          pip install --upgrade pip
+
           for svc in svc-usuarios svc-orcamento svc-previsao svc-notificacoes; do
-            pip install -r $svc/requirements.txt
+            if [ -f "$svc/requirements.txt" ]; then
+              echo "→ Instalando $svc/requirements.txt"
+              pip install -r $svc/requirements.txt
+            fi
           done
+
+          pip install pytest pytest-asyncio pytest-cov httpx
 
       # 4. Rodar testes e gerar relatório de cobertura
       - name: 🧪 Rodar testes e gerar coverage.xml
@@ -46,7 +52,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
+        with:
+          args: >
+            -Dsonar.python.version=3.12
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main'
@@ -55,7 +63,9 @@ jobs:
     name: 🚀 Deploy para AWS
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
 
       # 7. Configurar AWS CLI com credenciais seguras
       - name: 🛠️ Configurar AWS
