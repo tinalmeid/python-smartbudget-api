@@ -26,10 +26,16 @@ jobs:
       # 3. Instalar dependências e rodar testes
       - name: 📦 Instalar Dependências
         run: |
-          pip install pytest pytest-asyncio pytest-cov httpx
+          pip install --upgrade pip
+
           for svc in svc-usuarios svc-orcamento svc-previsao svc-notificacoes; do
-            pip install -r $svc/requirements.txt
+            if [ -f "$svc/requirements.txt" ]; then
+              echo "→ Instalando $svc/requirements.txt"
+              pip install -r $svc/requirements.txt
+            fi
           done
+
+          pip install pytest pytest-asyncio pytest-cov httpx
 
       # 4. Rodar testes e gerar relatório de cobertura
       - name: 🧪 Rodar testes e gerar coverage.xml
