@@ -34,11 +34,13 @@ passlib==1.7.4
 # boto3 → cliente AWS S3 para salvar modelos
 # tenacity → retentativas automáticas para operações falhas
 # evidently → monitoramento de qualidade de dados e modelos
+# protobuf → biblioteca de serialização de dados
 prophet==1.1.5
 mlflow==2.16.0
 boto3==1.35.0
 tenacity==9.0.0
 evidently==0.4.33
+protobuf==5.29.0
 
 # -- Mensageria --
 # aiokafka → cliente Kafka assíncrono
