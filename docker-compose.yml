@@ -1,0 +1,210 @@
+# @file docker-compose.yml
+# @description Orquestração dos containers do SmartBudget
+# Sobe os 4 microsserviços, nginx, Redis e Datadog Agent em uma rede isolada com health checks configurados.
+#
+# @author Tina de Almeida
+# @date Abril 2026
+# @version 1.0.0
+
+services:
+
+  # --- API Gateway ---
+  nginx:
+    image: nginx:alpine
+    container_name: smartbudget-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - smartbudget
+    depends_on:
+      svc-usuarios:
+        condition: service_healthy
+      svc-orcamento:
+        condition: service_healthy
+      svc-previsao:
+        condition: service_healthy
+      svc-notificacoes:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Microsserviços de usuários ---
+  svc-usuarios:
+    build:
+      context: ./svc-usuarios
+      dockerfile: Dockerfile
+    container_name: smartbudget-svc-usuarios
+    ports:
+      - "8001:8001"
+    environment:
+      - APP_PORT=8001
+      - DATABASE_URL=${DB_USUARIOS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - DD_SERVICE=svc-usuarios
+      - DD_ENV=${APP_ENV:-development}
+      - DD_AGENT_HOST=datadog-agent
+    networks:
+      - smartbudget
+    depends_on:
+      datadog-agent:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8001/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --- Microsserviços de orçamentos ---
+  svc-orcamento:
+    build:
+      context: ./svc-orcamento
+      dockerfile: Dockerfile
+    container_name: smartbudget-svc-orcamento
+    ports:
+      - "8002:8002"
+    environment:
+      - APP_PORT=8002
+      - DATABASE_URL=${DB_ORCAMENTO_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - DD_SERVICE=svc-orcamento
+      - DD_ENV=${APP_ENV:-development}
+      - DD_AGENT_HOST=datadog-agent
+      - REDIS_URL=${REDIS_URL}
+    networks:
+      - smartbudget
+    depends_on:
+      datadog-agent:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --- Microsserviços de previsão ---
+  svc-previsao:
+    build:
+      context: ./svc-previsao
+      dockerfile: Dockerfile
+    container_name: smartbudget-svc-previsao
+    ports:
+      - "8003:8003"
+    environment:
+      - APP_PORT=8003
+      - DATABASE_URL=${DB_PREVISAO_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - DD_SERVICE=svc-previsao
+      - DD_ENV=${APP_ENV:-development}
+      - DD_AGENT_HOST=datadog-agent
+      - REDIS_URL=${REDIS_URL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - MLFLOW_S3_BUCKET=${MLFLOW_S3_BUCKET}
+    networks:
+      - smartbudget
+    depends_on:
+      datadog-agent:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --- Microsserviços de notificações ---
+  svc-notificacoes:
+    build:
+      context: ./svc-notificacoes
+      dockerfile: Dockerfile
+    container_name: smartbudget-svc-notificacoes
+    ports:
+      - "8004:8004"
+    environment:
+      - APP_PORT=8004
+      - DATABASE_URL=${DB_NOTIFICACAO_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - DD_SERVICE=svc-notificacoes
+      - DD_ENV=${APP_ENV:-development}
+      - DD_AGENT_HOST=datadog-agent
+    networks:
+      - smartbudget
+    depends_on:
+      datadog-agent:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8004/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --- Cache Redis ---
+  redis:
+    image: redis:7-alpine
+    container_name: smartbudget-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - smartbudget
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # --- Datadog Agent ---
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    container_name: smartbudget-datadog
+    environment:
+      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_SITE=datadoghq.com
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    networks:
+      - smartbudget
+    restart: unless-stopped
+
+# --- Rede Isolada ---
+networks:
+  smartbudget:
+    name: smartbudget-network
+
+# @file Fim do arquivo docker-compose.yml
