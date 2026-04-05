@@ -9,8 +9,11 @@ Inicializa o servidor FastAPI, configura middlewares e registra os outers de aut
 """
 
 # Habilita o tracing do Datadog — deve ser chamado antes de qualquer outro import
-from ddtrace import patch_all
-patch_all()
+try:
+    from ddtrace import patch_all
+    patch_all()
+except ImportError:
+    pass
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
