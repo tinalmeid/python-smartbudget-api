@@ -1,4 +1,6 @@
 [run]
+include =
+    svc-usuarios/app/*
 omit =
     */__init__.py
     */tests/*
