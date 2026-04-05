@@ -18,7 +18,6 @@ from app.routers import auth, usuarios
 import logging
 import os
 from dotenv import load_dotenv
-load_dotenv
 
 # Carrega variáveis do .env
 load_dotenv()
