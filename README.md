@@ -155,9 +155,25 @@ Consulte os guias em `docs/`:
 | **ARQ-453** | 🏗️ Setup repositório e SonarCloud | `ARQ-453-chore/setup-repo-sonarcloud` | ✅ Concluído |
 | **ARQ-454** | 🐳 Docker Compose base | `ARQ-454-chore/docker-compose-base` | ✅ Concluído |
 | **ARQ-455** | 🔐 svc-usuarios — JWT | `ARQ-455-feat/svc-usuarios-jwt` | ✅ Concluído |
-| **ARQ-456** | 🧪 Testes svc-usuarios | `ARQ-456-test/svc-usuarios-auth` | 📝 A Fazer |
+| **ARQ-456** | 🧪 Testes svc-usuarios | `ARQ-456-test/svc-usuarios-auth` | ✅ Concluído |
 | **ARQ-457** | ⚙️ GitHub Actions CI/CD | `ARQ-457-chore/github-actions-pipeline` | 📝 A Fazer |
 | **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | 📝 A Fazer |
+| **ARQ-459** | 💰 svc-orcamento — CRUD transações e metas | `ARQ-459-feat/svc-orcamento-crud` | 📝 A Fazer |
+| **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | 📝 A Fazer |
+| **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | 📝 A Fazer |
+| **ARQ-462** | ⚡ Cache Redis TTL 1h no GET /resumo | `ARQ-462-feat/redis-cache-resumo` | 📝 A Fazer |
+| **ARQ-463** | 🧪 Testes svc-orcamento | `ARQ-463-test/svc-orcamento` | 📝 A Fazer |
+| **ARQ-464** | 🌐 Confluent Cloud e dashboards Grafana | `ARQ-464-chore/confluent-grafana-setup` | 📝 A Fazer |
+| **ARQ-465** | 🤖 Treinar modelo Prophet e registrar no MLflow | `ARQ-465-feat/prophet-mlflow-training` | 📝 A Fazer |
+| **ARQ-466** | 🔮 svc-previsao — endpoints predict e Circuit Breaker | `ARQ-466-feat/svc-previsao-endpoints` | 📝 A Fazer |
+| **ARQ-467** | 📉 Drift detection — GET /modelos/{id}/drift | `ARQ-467-feat/drift-detection-evidently` | 📝 A Fazer |
+| **ARQ-468** | 🔔 svc-notificacoes — consumer Kafka e push/email | `ARQ-468-feat/svc-notificacoes-consumer` | 📝 A Fazer |
+| **ARQ-469** | 🧪 Testes svc-previsao e svc-notificacoes | `ARQ-469-test/svc-previsao-notificacoes` | 📝 A Fazer |
+| **ARQ-470** | 📡 Datadog monitors de latência e SLO | `ARQ-470-chore/datadog-monitors-slo` | 📝 A Fazer |
+| **ARQ-471** | 🛡️ Elevar quality gate para coverage ≥ 80% | `ARQ-471-chore/sonar-quality-gate-80` | 📝 A Fazer |
+| **ARQ-472** | 🧪 Testes de integração E2E | `ARQ-472-test/e2e-fluxo-completo` | 📝 A Fazer |
+| **ARQ-473** | 🚀 Deploy final produção — EC2 + ECR | `ARQ-473-chore/deploy-producao-ec2` | 📝 A Fazer |
+| **ARQ-474** | 📚 README profissional | `ARQ-474-docs/readme-profissional` | 📝 A Fazer |
 
 > **Legenda:** ✅ Concluído | 🔄 Em Andamento | 📝 A Fazer
 

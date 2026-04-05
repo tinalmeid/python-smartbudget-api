@@ -14,11 +14,12 @@ import uuid
 from datetime import datetime, timedelta
 
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+import bcrypt as bcrypt_lib
 from sqlalchemy.orm import Session
 
 from app.models.usuario import Usuario
 from app.schemas.usuario import UsuarioCreate
+from datetime import datetime, timedelta, timezone
 
 # Configuração de Logging
 logger = logging.getLogger(__name__)
@@ -31,9 +32,6 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
 
 if not SECRET_KEY:
     raise ValueError("Variável SECRET_KEY não encontrada no arquivo .env")
-
-# --- Configuração bcrypt ---
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ==============================================================================
 # FUNÇÕES DE SENHA
@@ -49,7 +47,10 @@ def criar_hash_senha(senha: str) -> str:
     Returns:
         str: Hash bcrypt da senha
     """
-    return pwd_context.hash(senha)
+    return bcrypt_lib.hashpw(
+        senha.encode('utf-8'),
+        bcrypt_lib.gensalt()
+    ).decode('utf-8')
 
 def verificar_senha(senha: str, hash_senha: str) -> bool:
     """
@@ -62,7 +63,10 @@ def verificar_senha(senha: str, hash_senha: str) -> bool:
     Returns:
         bool: True se a senha estiver correta, False caso contrário
     """
-    return pwd_context.verify(senha, hash_senha)
+    return bcrypt_lib.checkpw(
+        senha.encode('utf-8'),
+        hash_senha.encode('utf-8')
+    )
 
 # ==============================================================================
 # FUNÇÕES DE TOKEN JWT
@@ -79,8 +83,8 @@ def criar_access_token(dados: dict) -> str:
         str: Token JWT de acesso assinado
     """
     payload = dados.copy()
-    expiracao = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload.update({"exp": expiracao, "type": "access"})
+    expiracao = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload.update({"exp": expiracao, "tipo": "access"})
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     logger.info("Access token gerado", extra={"user_id": dados.get("user_id")})
     return token
@@ -96,8 +100,8 @@ def criar_refresh_token(dados: dict) -> str:
         str: Refresh Token JWT assinado
     """
     payload = dados.copy()
-    expiracao = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    payload.update({"exp": expiracao, "type": "refresh"})
+    expiracao = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    payload.update({"exp": expiracao, "tipo": "refresh"})
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     logger.info("Refresh token gerado", extra={"user_id": dados.get("user_id")})
     return token
@@ -108,7 +112,7 @@ def verificar_token(token: str, tipo: str = "access") -> dict:
 
     Args:
         token: Token JWT recebido na requisição.
-        tipo: Tipo do token esperado — 'access' ou 'refresh'.
+        tipo: tipo do token esperado — 'access' ou 'refresh'.
 
     Returns:
         dict: Payload decodificado do token.
@@ -118,7 +122,7 @@ def verificar_token(token: str, tipo: str = "access") -> dict:
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("type") != tipo:
+        if payload.get("tipo") != tipo:
             raise JWTError("Tipo de token inválido")
         return payload
     except JWTError as e:

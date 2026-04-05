@@ -184,6 +184,10 @@ jobs:
       condition: eq(variables['isPython'], 'true')
       displayName: '🧪 Testes Unitários + Cobertura >= 80%'
 
+    - script: |
+        cat coverage.xml | grep "filename"
+      displayName: '🔍 Debug coverage.xml paths'
+
     # ===============================================================================
     # PASSO 5 — SONARCLOUD
     # Análise estática: bugs, vulnerabilidades, code smells e cobertura
