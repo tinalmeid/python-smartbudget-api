@@ -1,5 +1,4 @@
 [run]
-source = svc-usuarios/app
 omit =
     */__init__.py
     */tests/*
@@ -9,3 +8,6 @@ omit =
 exclude_lines =
     pragma: no cover
     if __name__ == .__main__.:
+
+[xml]
+output = coverage.xml
