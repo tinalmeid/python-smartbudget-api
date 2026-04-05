@@ -32,17 +32,6 @@ Este PR implementa [descreva o que foi feito, ex: autenticação JWT no svc-usua
 - [ ] Entre 60% e 80% (justificar abaixo)
 - [ ] Abaixo de 60% (bloqueado — não abre PR)
 
-**Checklist obrigatório:**
-
-- [ ] `pytest` passa localmente com `--cov-fail-under=80`
-- [ ] SonarCloud Quality Gate verde (sem new code smells)
-- [ ] Docstrings em todas as funções novas ou alteradas
-- [ ] SOLID aplicado (especialmente SRP — funções com uma responsabilidade)
-- [ ] Sem `print()` de debug, sem imports não usados
-- [ ] Nenhuma credencial ou secret no código
-- [ ] `requirements.txt` atualizado (se instalou nova lib)
-- [ ] `README.md` atualizado (se adicionou nova feature ou endpoint)
-
 ## Print da Pipeline / Testes
 
 > Cole aqui o output do pytest mostrando os testes passando e a cobertura,
@@ -51,3 +40,16 @@ Este PR implementa [descreva o que foi feito, ex: autenticação JWT no svc-usua
 ```text
 pytest output aqui
 ```
+
+> Recortar e colar no comentário do PR, antes de realizar o Squash Merge, confirmando todos os itens'
+**Checklist obrigatório:**
+
+Confirmação de execução local:
+- [ ] `pytest` passa localmente com `--cov-fail-under=80`
+- [ ] SonarCloud Quality Gate verde (sem new code smells)
+- [ ] Docstrings em todas as funções novas ou alteradas
+- [ ] SOLID aplicado (especialmente SRP — funções com uma responsabilidade)
+- [ ] Sem `print()` de debug, sem imports não usados
+- [ ] Nenhuma credencial ou secret no código
+- [ ] `requirements.txt` atualizado (se instalou nova lib)
+- [ ] `README.md` atualizado (se adicionou nova feature ou endpoint)
