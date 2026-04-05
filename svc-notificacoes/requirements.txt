@@ -15,10 +15,10 @@ uvicorn[standard]==0.30.0
 pydantic[email]==2.8.0
 
 # --- Banco de Dados ---
-# sqlalchemy + pymysql → ORM + driver MySQL para PlanetScale
+# sqlalchemy + psycopg2 → ORM + driver PostgreSQL para Neon
 # alembic → migrações de banco
 sqlalchemy==2.0.35
-pymysql==1.1.1
+psycopg2-binary==2.9.9
 alembic==1.13.0
 
 # --- Autenticação JWT ---
