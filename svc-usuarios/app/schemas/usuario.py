@@ -16,14 +16,22 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 # Configuração de Logging
 logger = logging.getLogger(__name__)
 
+# --- Constantes para exemplos do Swagger ---
+EXAMPLE_EMAIL = "tina@smartbudget.com"
+EXAMPLE_NOME = "Tina Smartbudget"
+EXAMPLE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+EXAMPLE_DATA = "2026-01-01T00:00:00"
+EXAMPLE_ID = "123e4567-e89b-12d3-a456-426614174000"
+EXAMPLE_SENHA = "Senha@123"
+
 class UsuarioCreate(BaseModel):
     """
     Schema de entrada para criação de usuário — o que o cliente envia na criação
     Usado no POST /auth/register.
     """
-    email: EmailStr = Field(..., description="Email do usuário", json_schema_extra={"example": "[EMAIL_ADDRESS]"})
-    senha: str = Field(min_length=8, max_length=128, json_schema_extra={"example": "Senha@123"})
-    nome: str | None = Field(None, description="Nome do usuário", json_schema_extra={"example": "Usuário Teste"})
+    email: EmailStr = Field(..., description="Email do usuário", json_schema_extra={"example": EXAMPLE_EMAIL})
+    senha: str = Field(min_length=8, max_length=128, json_schema_extra={"example": EXAMPLE_SENHA})
+    nome: str | None = Field(None, description="Nome do usuário", json_schema_extra={"example": EXAMPLE_NOME})
 
     @field_validator("senha")
     @classmethod
@@ -58,8 +66,8 @@ class UsuarioLogin(BaseModel):
     Schema de entrada para login de usuário — o que o cliente envia no login
     Usado no POST /auth/login.
     """
-    email: EmailStr = Field(..., description="Email do usuário", json_schema_extra={"example": "[EMAIL_ADDRESS]"})
-    senha: str = Field(..., description="Senha do usuário", json_schema_extra={"example": "Senha@123"})
+    email: EmailStr = Field(..., description="Email do usuário", json_schema_extra={"example": EXAMPLE_EMAIL})
+    senha: str = Field(..., description="Senha do usuário", json_schema_extra={"example": EXAMPLE_SENHA})
 
 class UsuarioResponse(BaseModel):
     """
@@ -68,11 +76,11 @@ class UsuarioResponse(BaseModel):
     Usado no GET /usuarios/{id} e no POST /auth/register.
     """
     model_config = ConfigDict(from_attributes=True)
-    id: str = Field(..., description="UUID do usuário", json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"})
-    email: EmailStr = Field(..., description="Email do usuário", json_schema_extra={"example": "[EMAIL_ADDRESS]"})
-    nome: str | None = Field(None, description="Nome do usuário", json_schema_extra={"example": "Usuário Teste"})
+    id: str = Field(..., description="UUID do usuário", json_schema_extra={"example": EXAMPLE_ID})
+    email: EmailStr = Field(..., description="Email do usuário", json_schema_extra={"example": EXAMPLE_EMAIL})
+    nome: str | None = Field(None, description="Nome do usuário", json_schema_extra={"example": EXAMPLE_NOME})
     ativo: bool = Field(..., description="Indica se a conta do usuário está ativa", json_schema_extra={"example": True})
-    criado_em: datetime = Field(..., description="Data e hora de criação do registro", json_schema_extra={"example": "2022-01-01T00:00:00"})
+    criado_em: datetime = Field(..., description="Data e hora de criação do registro", json_schema_extra={"example": EXAMPLE_DATA})
 
 class UsuarioUpdate(BaseModel):
     """
@@ -80,7 +88,7 @@ class UsuarioUpdate(BaseModel):
     Usado no PATCH /usuarios/me.
     Todos os campos são opcionais, atualiza apenas o que for enviado.
     """
-    nome: str | None = Field(None, description="Nome do usuário", json_schema_extra={"example": "Usuário Teste"})
+    nome: str | None = Field(None, description="Nome do usuário", json_schema_extra={"example": EXAMPLE_NOME})
     renda_mensal: str | None = Field(None, description="Renda mensal do usuário", json_schema_extra={"example": "1000.00"})
 
 class TokenResponse(BaseModel):
@@ -90,8 +98,8 @@ class TokenResponse(BaseModel):
 
     Retorna o token de acesso e o tipo do token.
     """
-    access_token: str = Field(..., description="Token de acesso", json_schema_extra={"example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."})
-    refresh_token: str = Field(..., description="Token de refresh", json_schema_extra={"example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."})
+    access_token: str = Field(..., description="Token de acesso", json_schema_extra={"example": EXAMPLE_TOKEN})
+    refresh_token: str = Field(..., description="Token de refresh", json_schema_extra={"example": EXAMPLE_TOKEN})
     token_type: str = Field(..., description="Tipo do token", json_schema_extra={"example": "bearer"})
 
 class TokenRefreshRequest(BaseModel):
@@ -99,7 +107,7 @@ class TokenRefreshRequest(BaseModel):
     Schema de entrada para refresh de token — o que o cliente envia no refresh
     Usado no POST /auth/refresh.
     """
-    refresh_token: str = Field(..., description="Token de refresh", json_schema_extra={"example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."})
+    refresh_token: str = Field(..., description="Token de refresh", json_schema_extra={"example": EXAMPLE_TOKEN})
 
 
 # @file Fim do arquivo schemas/usuario.py
