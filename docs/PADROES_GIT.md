@@ -56,6 +56,8 @@ git push
 
 ## 3. Auto Code Review (antes do PR)
 
+Verifique se a branch está atualizada com a main:
+
 - [ ] SOLID aplicado (ver `docs/SOLID.md`)
 - [ ] Docstrings em todas as funções (ver `docs/PADROES_DE_DOCUMENTACAO.md`)
 - [ ] Clean Code: sem print(), sem imports não usados, sem código morto (ver `docs/CLEAN_CODE.md`)
