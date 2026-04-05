@@ -153,8 +153,8 @@ Consulte os guias em `docs/`:
 | ID | Task | Branch | Status |
 | --- | --- | --- | --- |
 | **ARQ-453** | 🏗️ Setup repositório e SonarCloud | `ARQ-453-chore/setup-repo-sonarcloud` | ✅ Concluído |
-| **ARQ-454** | 🐳 Docker Compose base | `ARQ-454-chore/docker-compose-base` | 📝 A Fazer |
-| **ARQ-455** | 🔐 svc-usuarios — JWT | `ARQ-455-feat/svc-usuarios-jwt` | 📝 A Fazer |
+| **ARQ-454** | 🐳 Docker Compose base | `ARQ-454-chore/docker-compose-base` | ✅ Concluído |
+| **ARQ-455** | 🔐 svc-usuarios — JWT | `ARQ-455-feat/svc-usuarios-jwt` | ✅ Concluído |
 | **ARQ-456** | 🧪 Testes svc-usuarios | `ARQ-456-test/svc-usuarios-auth` | 📝 A Fazer |
 | **ARQ-457** | ⚙️ GitHub Actions CI/CD | `ARQ-457-chore/github-actions-pipeline` | 📝 A Fazer |
 | **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | 📝 A Fazer |

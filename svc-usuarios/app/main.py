@@ -14,8 +14,14 @@ patch_all()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers import auth, usuarios
 import logging
 import os
+from dotenv import load_dotenv
+load_dotenv
+
+# Carrega variáveis do .env
+load_dotenv()
 
 # Configura o logger para identificar o serviço
 logger = logging.getLogger(__name__)
@@ -58,6 +64,10 @@ app.add_middleware(
         "X-CSRFToken",
     ],
 )
+
+# Registra os routers
+app.include_router(auth.router)
+app.include_router(usuarios.router)
 
 @app.get("/health", tags=["health"])
 async def health_check() -> dict:
