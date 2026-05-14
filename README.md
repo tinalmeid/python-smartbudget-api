@@ -156,7 +156,7 @@ Consulte os guias em `docs/`:
 | **ARQ-454** | 🐳 Docker Compose base | `ARQ-454-chore/docker-compose-base` | ✅ Concluído |
 | **ARQ-455** | 🔐 svc-usuarios — JWT | `ARQ-455-feat/svc-usuarios-jwt` | ✅ Concluído |
 | **ARQ-456** | 🧪 Testes svc-usuarios | `ARQ-456-test/svc-usuarios-auth` | ✅ Concluído |
-| **ARQ-457** | ⚙️ GitHub Actions CI/CD | `ARQ-457-chore/github-actions-pipeline` | 📝 A Fazer |
+| **ARQ-457** | ⚙️ GitHub Actions CI/CD | `ARQ-457-chore/github-actions-pipeline` | 🔄 Em Andamento |
 | **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | 📝 A Fazer |
 | **ARQ-459** | 💰 svc-orcamento — CRUD transações e metas | `ARQ-459-feat/svc-orcamento-crud` | 📝 A Fazer |
 | **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | 📝 A Fazer |
