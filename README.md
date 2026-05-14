@@ -135,6 +135,39 @@ pytest --cov-report=term-missing
 
 **Cobertura mínima exigida: 80%** — o pipeline bloqueia o merge se cair abaixo.
 
+## ⚙️ Pipeline CI
+
+O pipeline roda automaticamente a cada `push` e `pull_request` para a `main`.
+
+```text
+push / PR na main
+        │
+        ▼
+┌─────────────────┐
+│   test          │  pytest + coverage ≥ 80% + coverage.xml
+└────────┬────────┘
+         │ sucesso
+         ▼
+┌─────────────────┐
+│   sonar         │  SonarCloud — análise estática + quality gate
+└────────┬────────┘
+         │ sucesso + branch main
+         ▼
+┌─────────────────┐
+│ build-and-deploy│  Docker build → ECR push → EC2 deploy (ARQ-473)
+└─────────────────┘
+```
+
+### 🔐 Secrets necessários
+
+| Secret | Onde configurar | Usado em |
+| --- | --- | --- |
+| `SONAR_TOKEN` | GitHub → Settings → Secrets | Job `sonar` |
+| `AWS_ACCESS_KEY_ID` | GitHub → Settings → Secrets | Job `build-and-deploy` (ARQ-473) |
+| `AWS_SECRET_ACCESS_KEY` | GitHub → Settings → Secrets | Job `build-and-deploy` (ARQ-473) |
+| `EC2_HOST` | GitHub → Settings → Secrets | Job `build-and-deploy` (ARQ-473) |
+| `EC2_SSH_KEY` | GitHub → Settings → Secrets | Job `build-and-deploy` (ARQ-473) |
+
 ## 🌿 Padrões de Desenvolvimento
 
 Consulte os guias em `docs/`:
