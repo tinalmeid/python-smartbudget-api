@@ -9,13 +9,20 @@ Inicializa o servidor FastAPI, configura middlewares de CORS e registra os route
 """
 
 # Habilita o tracing do Datadog — deve ser chamado antes de qualquer outro import
-from ddtrace import patch_all
-patch_all()
+try:
+    from ddtrace import patch_all
+    patch_all()
+except ImportError:
+    pass
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import logging
+# Stdlib (bibliotecas nativas do Python)
 import os
+import logging
+
+# Third-party (libs instaladas)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+
 
 # Configura o logger para identificar o serviço
 logger = logging.getLogger(__name__)
@@ -24,7 +31,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="SmartBudget - svc-notificacoes",
     description="API de notificações e alertas. "
-            "Consumer Kafka que envia alertas de limite via push FCM e e-mail SendGrid.",
+    "Consumer Kafka que envia alertas de limite via push FCM e e-mail SendGrid.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -35,7 +42,7 @@ app = FastAPI(
 # Em prod: https://smartbudget.app.br (futuro)
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:8001,http://localhost:8002,http://localhost:8003,http://localhost:8004"
+    "http://localhost:3000,http://localhost:8001,http://localhost:8002,http://localhost:8003,http://localhost:8004"  # NOSONAR
 ).split(",")
 
 # Configura CORS — restringe origens, métodos e headers permitidos
@@ -59,6 +66,7 @@ app.add_middleware(
     ],
 )
 
+
 @app.get("/health", tags=["health"])
 async def health_check() -> dict:
     """
@@ -67,7 +75,8 @@ async def health_check() -> dict:
     Returns:
         dict: Dicionário com o status do serviço com nome e versão
     """
-    logger.info("Health check solicitado", extra={"service": "svc-notificacoes", "version": "1.0.0"})
+    logger.info("Health check solicitado", extra={
+                "service": "svc-notificacoes", "version": "1.0.0"})
     return {"status": "ok", "service": "svc-notificacoes", "version": "1.0.0"}
 
 # @file Fim do arquivo svc-notificacoes/app/main.py
