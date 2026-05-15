@@ -168,6 +168,18 @@ push / PR na main
 | `EC2_HOST` | GitHub → Settings → Secrets | Job `build-and-deploy` (ARQ-473) |
 | `EC2_SSH_KEY` | GitHub → Settings → Secrets | Job `build-and-deploy` (ARQ-473) |
 
+## 🔐 Variáveis de Ambiente
+
+Todas as variáveis estão documentadas em `.env.example`. As mais importantes:
+
+| Variável | Descrição | Exemplo |
+| --- | --- | --- |
+| `SECRET_KEY` | Chave JWT (gere com `secrets.token_hex(32)`) | `abc123...` |
+| `DB_USUARIOS_URL` | URL PlanetScale do svc-usuarios | `mysql+pymysql://...` |
+| `KAFKA_BOOTSTRAP_SERVERS` | Endereço Confluent Cloud | `pkc-xxx:9092` |
+| `DATADOG_API_KEY` | API Key do Datadog | `dd_api_...` |
+| `AWS_ACCESS_KEY_ID` | Credencial AWS para S3/ECR | `AKIA...` |
+
 ## 🌿 Padrões de Desenvolvimento
 
 Consulte os guias em `docs/`:
@@ -189,8 +201,8 @@ Consulte os guias em `docs/`:
 | **ARQ-454** | 🐳 Docker Compose base | `ARQ-454-chore/docker-compose-base` | ✅ Concluído |
 | **ARQ-455** | 🔐 svc-usuarios — JWT | `ARQ-455-feat/svc-usuarios-jwt` | ✅ Concluído |
 | **ARQ-456** | 🧪 Testes svc-usuarios | `ARQ-456-test/svc-usuarios-auth` | ✅ Concluído |
-| **ARQ-457** | ⚙️ GitHub Actions CI/CD | `ARQ-457-chore/github-actions-pipeline` | 🔄 Em Andamento |
-| **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | 📝 A Fazer |
+| **ARQ-457** | ⚙️ GitHub Actions CI/CD | `ARQ-457-chore/github-actions-pipeline` | ✅ Concluído |
+| **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | 🔄 Em Andamento |
 | **ARQ-459** | 💰 svc-orcamento — CRUD transações e metas | `ARQ-459-feat/svc-orcamento-crud` | 📝 A Fazer |
 | **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | 📝 A Fazer |
 | **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | 📝 A Fazer |
@@ -209,18 +221,6 @@ Consulte os guias em `docs/`:
 | **ARQ-474** | 📚 README profissional | `ARQ-474-docs/readme-profissional` | 📝 A Fazer |
 
 > **Legenda:** ✅ Concluído | 🔄 Em Andamento | 📝 A Fazer
-
-## 🔐 Variáveis de Ambiente
-
-Todas as variáveis estão documentadas em `.env.example`. As mais importantes:
-
-| Variável | Descrição | Exemplo |
-| --- | --- | --- |
-| `SECRET_KEY` | Chave JWT (gere com `secrets.token_hex(32)`) | `abc123...` |
-| `DB_USUARIOS_URL` | URL PlanetScale do svc-usuarios | `mysql+pymysql://...` |
-| `KAFKA_BOOTSTRAP_SERVERS` | Endereço Confluent Cloud | `pkc-xxx:9092` |
-| `DATADOG_API_KEY` | API Key do Datadog | `dd_api_...` |
-| `AWS_ACCESS_KEY_ID` | Credencial AWS para S3/ECR | `AKIA...` |
 
 ## 📄 Licença
 
