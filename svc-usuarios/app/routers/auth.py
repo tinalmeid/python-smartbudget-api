@@ -1,5 +1,6 @@
 """
-@file: svc-usuarios/app/routers/auth.py
+@module: svc-usuarios.app.routers.auth
+@file: auth.py
 @description: Router de autenticação do svc-usuarios.
               Define os endpoints de registro, login e refresh de token JWT.
 @author: Tina de Almeida
@@ -99,7 +100,8 @@ async def refresh(dados: TokenRefreshRequest):
         HTTPException 401: Se o refresh token for inválido ou expirado.
     """
     try:
-        payload = auth_service.verificar_token(dados.refresh_token, tipo="refresh")
+        payload = auth_service.verificar_token(
+            dados.refresh_token, tipo="refresh")
         novo_access_token = auth_service.criar_access_token({
             "user_id": payload.get("user_id"),
             "email": payload.get("email")

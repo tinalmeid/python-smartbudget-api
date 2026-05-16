@@ -1,5 +1,6 @@
 """
-@file: svc-usuarios/app/models/__init__.py
+@module: svc-usuarios.app.models
+@file: __init__.py
 @description: WIP
 
 @author: Tina de Almeida

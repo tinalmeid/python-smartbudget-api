@@ -1,5 +1,6 @@
 """
-@file: svc-usuarios/app/models/usuario.py
+@module: svc-usuarios.app.models.usuario
+@file: usuario.py
 @description: Model SQLAlchemy do usuário.
               Define a estrutura da tabela 'usuarios' no banco de dados PlanetScale.
 
@@ -16,6 +17,7 @@ from app.database import Base
 
 # Configuração de Logging
 logger = logging.getLogger(__name__)
+
 
 class Usuario(Base):
     """

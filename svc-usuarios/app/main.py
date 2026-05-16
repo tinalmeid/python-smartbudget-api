@@ -71,6 +71,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(usuarios.router)
 
+
 @app.get("/health", tags=["health"])
 async def health_check() -> dict:
     """
@@ -79,7 +80,8 @@ async def health_check() -> dict:
     Returns:
         dict: Dicionário com o status do serviço com nome e versão
     """
-    logger.info("Health check solicitado", extra={"service": "svc-usuarios", "version": "1.0.0"})
+    logger.info("Health check solicitado", extra={
+                "service": "svc-usuarios", "version": "1.0.0"})
     return {"status": "ok", "service": "svc-usuarios", "version": "1.0.0"}
 
 # @file Fim do arquivo svc-usuarios/app/main.py

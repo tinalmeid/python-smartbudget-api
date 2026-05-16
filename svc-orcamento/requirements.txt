@@ -17,7 +17,7 @@ pydantic[email]==2.8.0
 # sqlalchemy + psycopg2 → ORM + driver PostgreSQL para Neon
 # alembic → migrações de banco
 sqlalchemy==2.0.35
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 alembic==1.13.0
 
 # --- Autenticação JWT ---
@@ -30,15 +30,15 @@ passlib==1.7.4
 
 # -- Processamento de Arquivos CSV --
 # pandas → processamento de arquivos CSV
-pandas==2.2.0
+pandas==2.2.3
 
 # -- Mensageria --
 # aiokafka → cliente Kafka assíncrono
-aiokafka==0.11.0
+aiokafka==0.12.0
 
 # -- Observabilidade --
 # ddtrace → integração com Datadog APM
-ddtrace==2.10.0
+ddtrace==4.8.4
 
 # -- Testes --
 # pytest → framework de testes

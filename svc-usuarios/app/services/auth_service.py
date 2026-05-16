@@ -1,5 +1,6 @@
 """
-@file: svc-usuarios/services/auth_service.py
+@module: svc-usuarios.app.services.auth_service
+@file: auth_service.py
 @description: Serviço de autenticação JWT do svc-usuarios.
               Contém as regras de negócio de registro, login, geração e validação de tokens JWT.
 
@@ -37,6 +38,7 @@ if not SECRET_KEY:
 # FUNÇÕES DE SENHA
 # ==============================================================================
 
+
 def criar_hash_senha(senha: str) -> str:
     """
     Gera hash da senha usando bcrypt
@@ -51,6 +53,7 @@ def criar_hash_senha(senha: str) -> str:
         senha.encode('utf-8'),
         bcrypt_lib.gensalt()
     ).decode('utf-8')
+
 
 def verificar_senha(senha: str, hash_senha: str) -> bool:
     """
@@ -72,6 +75,7 @@ def verificar_senha(senha: str, hash_senha: str) -> bool:
 # FUNÇÕES DE TOKEN JWT
 # ==============================================================================
 
+
 def criar_access_token(dados: dict) -> str:
     """
     Gerar o access token JWT com expiração de 15 minutos
@@ -83,11 +87,13 @@ def criar_access_token(dados: dict) -> str:
         str: Token JWT de acesso assinado
     """
     payload = dados.copy()
-    expiracao = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expiracao = datetime.now(timezone.utc) + \
+        timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload.update({"exp": expiracao, "tipo": "access"})
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     logger.info("Access token gerado", extra={"user_id": dados.get("user_id")})
     return token
+
 
 def criar_refresh_token(dados: dict) -> str:
     """
@@ -100,11 +106,14 @@ def criar_refresh_token(dados: dict) -> str:
         str: Refresh Token JWT assinado
     """
     payload = dados.copy()
-    expiracao = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expiracao = datetime.now(timezone.utc) + \
+        timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     payload.update({"exp": expiracao, "tipo": "refresh"})
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-    logger.info("Refresh token gerado", extra={"user_id": dados.get("user_id")})
+    logger.info("Refresh token gerado", extra={
+                "user_id": dados.get("user_id")})
     return token
+
 
 def verificar_token(token: str, tipo: str = "access") -> dict:
     """
@@ -133,6 +142,7 @@ def verificar_token(token: str, tipo: str = "access") -> dict:
 # FUNÇÕES DE USUÁRIO
 # ==============================================================================
 
+
 def buscar_por_email(email: str, db: Session) -> Usuario | None:
     """
     Busca um usuário pelo e-mail no banco de dados.
@@ -145,6 +155,7 @@ def buscar_por_email(email: str, db: Session) -> Usuario | None:
         Usuario | None: Usuário encontrado ou None se não existir.
     """
     return db.query(Usuario).filter(Usuario.email == email).first()
+
 
 def criar_usuario(dados: UsuarioCreate, db: Session) -> Usuario:
     """
@@ -162,7 +173,7 @@ def criar_usuario(dados: UsuarioCreate, db: Session) -> Usuario:
     """
     if buscar_por_email(dados.email, db):
         logger.warning("Tentativa de cadastro com e-mail duplicado",
-                      extra={"email": dados.email})
+                       extra={"email": dados.email})
         raise ValueError("E-mail já cadastrado")
 
     usuario = Usuario(
@@ -177,8 +188,9 @@ def criar_usuario(dados: UsuarioCreate, db: Session) -> Usuario:
     db.refresh(usuario)
 
     logger.info("Usuário criado com sucesso",
-               extra={"usuario_id": usuario.id})
+                extra={"usuario_id": usuario.id})
     return usuario
+
 
 def autenticar_usuario(email: str, senha: str, db: Session) -> Usuario:
     """
@@ -199,21 +211,21 @@ def autenticar_usuario(email: str, senha: str, db: Session) -> Usuario:
 
     if not usuario:
         logger.warning("Tentativa de login com e-mail inexistente",
-                      extra={"email": email})
+                       extra={"email": email})
         raise ValueError("E-mail ou senha inválidos")
 
     if not verificar_senha(senha, usuario.senha_hash):
         logger.warning("Tentativa de login com senha inválida",
-                      extra={"usuario_id": usuario.id})
+                       extra={"usuario_id": usuario.id})
         raise ValueError("E-mail ou senha inválidos")
 
     if not usuario.ativo:
         logger.warning("Tentativa de login em conta inativa",
-                      extra={"usuario_id": usuario.id})
+                       extra={"usuario_id": usuario.id})
         raise ValueError("Conta inativa — entre em contato com o suporte")
 
     logger.info("Login realizado com sucesso",
-               extra={"usuario_id": usuario.id})
+                extra={"usuario_id": usuario.id})
     return usuario
 
 

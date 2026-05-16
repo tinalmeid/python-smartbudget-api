@@ -1,5 +1,6 @@
 """
-@file: svc-usuarios/app/routers/__init__.py
+@module: svc-usuarios.app.routers
+@file: __init__.py
 @description: WIP
 
 @author: Tina de Almeida

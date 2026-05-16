@@ -1,4 +1,5 @@
 """
+@module: svc-orcamento.app.tests
 @file: __init__.py
 @description: WIP
 
