@@ -1,11 +1,12 @@
 """
-@file svc-orcamento/app/main.py
+@module: svc-orcamento.app.main
+@file: main.py
 @description: Ponto e entrada do svc-orcamento.
 Inicializa o servidor FastAPI, configura middlewares de CORS e registra os routers de transações, categorias e orçamentos mensais.
 
 @author: Tina de Almeida
 @date: Abril de 2026
-@version: 1.0.0
+@version: 1.0.1
 """
 
 # Habilita o tracing do Datadog — deve ser chamado antes de qualquer outro import
@@ -22,6 +23,10 @@ import logging
 # Third-party (libs instaladas)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
+
+# Local imports (módulos do projeto)
+from app.routers import transacoes
+from app.routers import orcamentos
 
 # Configura o logger para identificar o serviço
 logger = logging.getLogger(__name__)
@@ -64,6 +69,11 @@ app.add_middleware(
         "X-CSRFToken",
     ],
 )
+
+# Registra os routers de transações, categorias e orçamentos
+
+app.include_router(transacoes.router)
+app.include_router(orcamentos.router)
 
 
 @app.get("/health", tags=["health"])

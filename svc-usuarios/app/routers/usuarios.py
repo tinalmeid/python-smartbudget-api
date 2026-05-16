@@ -1,5 +1,6 @@
 """
-@file: svc-usuarios/app/routers/usuarios.py
+@module: svc-usuarios.app.routers.usuarios
+@file: usuarios.py
 @description: Router de perfil do usuário do svc-usuarios.
               Define os endpoints de consulta e atualização de perfil.
 @author: Tina de Almeida

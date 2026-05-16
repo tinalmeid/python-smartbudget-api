@@ -1,5 +1,6 @@
 """
-@file: svc-usuarios/services/__init__.py
+@module: svc-usuarios.app.services
+@file: __init__.py
 @description: WIP
 
 @author: Tina de Almeida

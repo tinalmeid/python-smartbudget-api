@@ -1,11 +1,13 @@
 """
-@file: svc-usuarios/app/database.py
-@description: Configuração da conexão com o banco de dados via SQLAlchemy.
-              Suporta PostgreSQL (produção/Neon) e SQLite (testes).
+@module: svc-orcamento.app.database
+@file: database.py
+@description Configuração da conexão com o banco de dados via SQLAlchemy.
+             Suporta PostgreSQL (produção/Neon) e SQLite (testes).
 @author: Tina de Almeida
-@date: Abril 2026
-@version: 1.0.2
+@date: Maio 2026
+@version: 1.0.0
 """
+
 import logging
 import os
 
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 if not DATABASE_URL:
-    raise ValueError("Variável DATABASE_URL não encontrada no arquivo .env")
+    DATABASE_URL = "sqlite:///:memory:"
 
 # SQLite não suporta pool_size e max_overflow — usado nos testes
 # PostgreSQL suporta — usado em desenvolvimento e produção
@@ -30,6 +32,7 @@ if DATABASE_URL.startswith("sqlite"):
 else:
     engine = create_engine(
         DATABASE_URL,
+        connect_args={"options": "-csearch_path=orcamento,public"},
         pool_pre_ping=True,
         pool_size=5,
         max_overflow=10,
@@ -67,6 +70,5 @@ def get_db():
         raise
     finally:
         db.close()
-
 
 # @file Fim do arquivo database.py
