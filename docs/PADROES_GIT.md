@@ -89,6 +89,7 @@ No GitHub, use sempre **Squash and Merge**.
 git checkout main
 git pull origin main
 git branch -d ARQ-453-chore/setup-repo-sonarcloud
+git branch -D ARQ-453-chore/setup-repo-sonarcloud (Força, caso dê erro)
 git checkout -b ARQ-454-chore/docker-compose-base
 ```
 
