@@ -41,8 +41,8 @@ def get_usuario_id() -> int:
 @router.post("", status_code=status.HTTP_201_CREATED)
 def criar_orcamento(
         dados: OrcamentoCreate,
-        db: Session = Depends(get_db),
-        usuario_id: int = Depends(get_usuario_id)
+        db: Session = Depends(get_db),  # NOSONAR
+        usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> OrcamentoOut:
     """
     Define um limite mensal por categoria.
@@ -61,9 +61,9 @@ def criar_orcamento(
 @router.get("/resumo")
 def resumo_mensal(
         mes: str = Query(..., pattern=r"^\d{4}-\d{2}$",
-                         description="Mês no formato YYYY-MM"),
-        db: Session = Depends(get_db),
-        usuario_id: int = Depends(get_usuario_id)
+                         description="Mês no formato YYYY-MM"),  # NOSONAR
+        db: Session = Depends(get_db),  # NOSONAR
+        usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> list[dict]:
     """
     Retorna o gasto real vs limite por categoria no mês informado.
