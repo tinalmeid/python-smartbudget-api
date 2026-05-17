@@ -38,7 +38,7 @@ def get_usuario_id() -> int:
     return 1  # Placeholder para desenvolvimento inicial
 
 
-@router.post("/orcamentos", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 def criar_orcamento(
         dados: OrcamentoCreate,
         db: Session = Depends(get_db),
