@@ -24,10 +24,6 @@ import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 
-# Local imports (módulos do projeto)
-from app.routers import transacoes
-from app.routers import orcamentos
-
 # Configura o logger para identificar o serviço
 logger = logging.getLogger(__name__)
 
@@ -69,11 +65,6 @@ app.add_middleware(
         "X-CSRFToken",
     ],
 )
-
-# Registra os routers de transações, categorias e orçamentos
-
-app.include_router(transacoes.router)
-app.include_router(orcamentos.router)
 
 
 @app.get("/health", tags=["health"])
