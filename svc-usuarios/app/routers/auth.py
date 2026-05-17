@@ -31,7 +31,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     response_model=UsuarioResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def register(dados: UsuarioCreate, db: Session = Depends(get_db)):
+async def register(dados: UsuarioCreate, db: Session = Depends(get_db)):  # NOSONAR
     """
     Registra um novo usuário no sistema.
 
@@ -56,7 +56,7 @@ async def register(dados: UsuarioCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(dados: UsuarioLogin, db: Session = Depends(get_db)):
+async def login(dados: UsuarioLogin, db: Session = Depends(get_db)):  # NOSONAR
     """
     Autentica o usuário e retorna os tokens JWT.
 

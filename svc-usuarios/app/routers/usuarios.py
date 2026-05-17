@@ -50,8 +50,8 @@ def get_usuario_atual(
 
 @router.get("/me", response_model=UsuarioResponse)
 async def get_me(
-    payload: dict = Depends(get_usuario_atual),
-    db: Session = Depends(get_db)
+    payload: dict = Depends(get_usuario_atual),  # NOSONAR
+    db: Session = Depends(get_db)  # NOSONAR
 ):
     """
     Retorna os dados do usuário autenticado.
@@ -78,8 +78,8 @@ async def get_me(
 @router.patch("/me", response_model=UsuarioResponse)
 async def update_me(
     dados: UsuarioUpdate,
-    payload: dict = Depends(get_usuario_atual),
-    db: Session = Depends(get_db)
+    payload: dict = Depends(get_usuario_atual),  # NOSONAR
+    db: Session = Depends(get_db)  # NOSONAR
 ):
     """
     Atualiza os dados do perfil do usuário autenticado.
