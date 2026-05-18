@@ -116,9 +116,35 @@ http://localhost:8004/docs  — svc-notificacoes
 | --- | --- | --- | --- |
 | `POST` | `/v1/auth/register` | usuarios | Cria conta |
 | `POST` | `/v1/auth/login` | usuarios | Login → JWT |
+| `GET` | `/v1/usuarios/me` | usuarios | Retorna perfil do usuário |
+| `PATCH` | `/v1/usuarios/me` | usuarios | Atualiza perfil do usuário |
+| `POST` | `/v1/categorias` | orcamento | Cria categoria de gasto |
 | `POST` | `/v1/transacoes` | orcamento | Registra gasto |
-| `GET` | `/v1/resumo?mes=YYYY-MM` | orcamento | Gasto vs limite |
+| `GET` | `/v1/transacoes` | orcamento | Lista transações com filtros |
+| `DELETE` | `/v1/transacoes/{id}` | orcamento | Deleta transação |
+| `POST` | `/v1/orcamentos` | orcamento | Define limite mensal por categoria |
+| `GET` | `/v1/orcamentos/resumo?mes=YYYY-MM` | orcamento | Gasto real vs limite |
+| `POST` | `/v1/importar-extrato` | orcamento | Importa extrato bancário via CSV |
 | `POST` | `/v1/prever-gasto` | previsao | Previsão Prophet |
+
+## 📥 Importação de Extrato CSV
+
+**Endpoint:** `POST /v1/importar-extrato`
+
+**Formato do arquivo:**
+
+| Coluna | Tipo | Descrição |
+| --- | --- | --- |
+| `data` | YYYY-MM-DD | Data da transação |
+| `descricao` | texto | Descrição do lançamento |
+| `valor` | decimal | Valor positivo |
+| `tipo` | texto | `débito` (importado) ou `crédito` (ignorado) |
+
+**Retorno:**
+
+```json
+{"importadas": 3, "erros": [{"linha": 5, "erro": "valor inválido"}]}
+```
 
 ## 🧪 Testes
 
@@ -202,10 +228,10 @@ Consulte os guias em `docs/`:
 | **ARQ-455** | 🔐 svc-usuarios — JWT | `ARQ-455-feat/svc-usuarios-jwt` | ✅ Concluído |
 | **ARQ-456** | 🧪 Testes svc-usuarios | `ARQ-456-test/svc-usuarios-auth` | ✅ Concluído |
 | **ARQ-457** | ⚙️ GitHub Actions CI/CD | `ARQ-457-chore/github-actions-pipeline` | ✅ Concluído |
-| **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | 🔄 Em Andamento |
-| **ARQ-459** | 💰 svc-orcamento — CRUD transações e metas | `ARQ-459-feat/svc-orcamento-crud` | 📝 A Fazer |
-| **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | 📝 A Fazer |
-| **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | 📝 A Fazer |
+| **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | ✅ Concluído |
+| **ARQ-459** | 💰 svc-orcamento — CRUD transações e metas | `ARQ-459-feat/svc-orcamento-crud` | ✅ Concluído |
+| **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | ✅ Concluído |
+| **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | 🔄 Em Andamento |
 | **ARQ-462** | ⚡ Cache Redis TTL 1h no GET /resumo | `ARQ-462-feat/redis-cache-resumo` | 📝 A Fazer |
 | **ARQ-463** | 🧪 Testes svc-orcamento | `ARQ-463-test/svc-orcamento` | 📝 A Fazer |
 | **ARQ-464** | 🌐 Confluent Cloud e dashboards Grafana | `ARQ-464-chore/confluent-grafana-setup` | 📝 A Fazer |
