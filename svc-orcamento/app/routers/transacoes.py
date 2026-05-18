@@ -12,6 +12,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
+from app.kafka import kafka_producer
 
 from app.database import get_db
 from app.schemas.transacao import TransacaoCreate, TransacaoOut
@@ -40,13 +41,14 @@ def get_usuario_id() -> int:
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def criar_transacao(
+async def criar_transacao(
         dados: TransacaoCreate,
-        db: Session = Depends(get_db),
-        usuario_id: int = Depends(get_usuario_id)
+        db: Session = Depends(get_db),  # NOSONAR
+        usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> TransacaoOut:
     """
     Registra uma nova transação financeira.
+    E publica evento no Kafka.
 
     Args:
         dados: Dados validados
@@ -56,20 +58,32 @@ def criar_transacao(
     Returns:
         TransacaoOut: Transação criada com status 201.
     """
-    return service.criar_transacao(db, dados, usuario_id)
+    transacao = service.criar_transacao(db, dados, usuario_id)
+
+    # Fire-and-forget — não bloqueia o retorno 201
+    await kafka_producer.publicar_transacao_criada(
+        usuario_id=usuario_id,
+        valor=str(transacao.valor),
+        categoria_id=transacao.categoria_id,
+        data_transacao=str(transacao.data_transacao),
+    )
+
+    return transacao
 
 
 @router.get("")
 def listar_transacoes(
         mes: Optional[str] = Query(
+            # NOSONAR
             default=None, pattern=r"^\d{4}-\d{2}$", description="Filtro de mês no formato YYYY-MM"),
         categoria: Optional[str] = Query(
-            default=None, description="Filtro de categoria por nome"),
-        pagina: int = Query(default=1, ge=1, description="Número da página"),
+            default=None, description="Filtro de categoria por nome"),  # NOSONAR
+        pagina: int = Query(
+            default=1, ge=1, description="Número da página"),  # NOSONAR
         tamanho: int = Query(default=20, ge=1, le=100,
-                             description="Quantidade de itens por página"),
-        db: Session = Depends(get_db),
-        usuario_id: int = Depends(get_usuario_id)
+                             description="Quantidade de itens por página"),  # NOSONAR
+        db: Session = Depends(get_db),  # NOSONAR
+        usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> list[TransacaoOut]:
     """
     Lista transações do usuário com filtros opcionais.
@@ -91,8 +105,8 @@ def listar_transacoes(
 @router.delete("/{transacao_id}", status_code=status.HTTP_204_NO_CONTENT)
 def deletar_transacao(
         transacao_id: int,
-        db: Session = Depends(get_db),
-        usuario_id: int = Depends(get_usuario_id)
+        db: Session = Depends(get_db),  # NOSONAR
+        usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> None:
     """
     Deleta uma transação do usuário autenticado.

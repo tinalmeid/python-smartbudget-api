@@ -23,7 +23,9 @@ from app.main import app
 from app.database import Base, get_db
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
+from unittest.mock import AsyncMock, patch
 from sqlalchemy import create_engine
+from app import kafka
 from fastapi.testclient import TestClient
 import pytest
 
@@ -149,5 +151,15 @@ def orcamento_dados():
         "limite": 500.00,
         "mes_ano": "2026-05"
     }
+
+
+@pytest.fixture(autouse=True)
+def mock_kafka():
+    """Mock do Kafka producer para todos os testes."""
+    with patch.object(kafka.kafka_producer, "start", new_callable=AsyncMock), \
+            patch.object(kafka.kafka_producer, "stop", new_callable=AsyncMock), \
+            patch.object(kafka.kafka_producer, "publicar_transacao_criada", new_callable=AsyncMock), \
+            patch.object(kafka.kafka_producer, "publicar_orcamento_alerta", new_callable=AsyncMock):
+        yield
 
 # @file Fim do arquivo svc-orcamento/app/tests/conftest.py

@@ -21,14 +21,27 @@ import os
 import logging
 
 # Third-party (libs instaladas)
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 
 # Local imports (módulos do projeto)
 from app.routers import transacoes, categorias, extrato, orcamentos
+from app.kafka import kafka_producer
 
 # Configura o logger para identificar o serviço
 logger = logging.getLogger(__name__)
+
+
+# Gerencia o ciclo de vida da aplicação, iniciando e parando o KafkaProducer
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Gerencia o ciclo de vida da aplicação."""
+    await kafka_producer.start()
+    yield
+    await kafka_producer.stop()
 
 # Inicializa o servidor FastAPI
 app = FastAPI(
@@ -38,6 +51,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,  # ← adiciona esta linha
 )
 
 # Lê os origins permitidos do arquivo .env
