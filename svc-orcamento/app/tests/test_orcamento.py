@@ -104,7 +104,7 @@ class TestOrcamento:
     def test_criar_orcamento_sucesso(self, client, db, orcamento_dados):
         """Deve criar orçamento e retornar status 201."""
         self._cria_categoria(db)
-        response = client.post("/v1/orcamentos/", json=orcamento_dados)
+        response = client.post("/v1/orcamentos", json=orcamento_dados)
         assert response.status_code == 201
         assert response.json()["limite"] == "500.00"
 
@@ -112,15 +112,15 @@ class TestOrcamento:
         """Deve retornar 409 ao criar orçamento duplicado."""
         self._cria_categoria(db)
         # Primeiro orçamento
-        client.post("/v1/orcamentos/", json=orcamento_dados)
+        client.post("/v1/orcamentos", json=orcamento_dados)
         response = client.post(
-            "/v1/orcamentos/", json=orcamento_dados)  # Segundo orçamento
+            "/v1/orcamentos", json=orcamento_dados)  # Segundo orçamento
         assert response.status_code == 409
 
     def test_criar_orcamento_mes_invalido(self, client, db):
         """Deve retornar 402 se o mês for inválido."""
         self._cria_categoria(db)
-        response = client.post("/v1/orcamentos/", json={
+        response = client.post("/v1/orcamentos", json={
             "categoria_id": 1,
             "valor": 500.00,
             "mes_ano": "2026-13"  # Mês inválido
