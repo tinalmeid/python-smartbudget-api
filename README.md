@@ -231,8 +231,8 @@ Consulte os guias em `docs/`:
 | **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | ✅ Concluído |
 | **ARQ-459** | 💰 svc-orcamento — CRUD transações e metas | `ARQ-459-feat/svc-orcamento-crud` | ✅ Concluído |
 | **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | ✅ Concluído |
-| **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | 🔄 Em Andamento |
-| **ARQ-462** | ⚡ Cache Redis TTL 1h no GET /resumo | `ARQ-462-feat/redis-cache-resumo` | 📝 A Fazer |
+| **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | ✅ Concluído |
+| **ARQ-462** | ⚡ Cache Redis TTL 1h no GET /resumo | `ARQ-462-feat/redis-cache-resumo` | 🔄 Em Andamento |
 | **ARQ-463** | 🧪 Testes svc-orcamento | `ARQ-463-test/svc-orcamento` | 📝 A Fazer |
 | **ARQ-464** | 🌐 Confluent Cloud e dashboards Grafana | `ARQ-464-chore/confluent-grafana-setup` | 📝 A Fazer |
 | **ARQ-465** | 🤖 Treinar modelo Prophet e registrar no MLflow | `ARQ-465-feat/prophet-mlflow-training` | 📝 A Fazer |

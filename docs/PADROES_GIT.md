@@ -58,12 +58,10 @@ git push
 
 Verifique se a branch está atualizada com a main:
 
-- [ ] SOLID aplicado (ver `docs/SOLID.md`)
-- [ ] Docstrings em todas as funções (ver `docs/PADROES_DE_DOCUMENTACAO.md`)
-- [ ] Clean Code: sem print(), sem imports não usados, sem código morto (ver `docs/CLEAN_CODE.md`)
-- [ ] Nenhuma credencial no código ou commit
-- [ ] `pytest` passa com cobertura >= 80%
-- [ ] SonarCloud Quality Gate verde
+- [ ] 🚦 Testes passando localmente (pytest)
+- [ ] ✍🏽 Docstrings nas funções novas ou alteradas
+- [ ] 🔐 Sem credenciais ou print() de debug no código
+- [ ] 📦 requirements.txt e README.md atualizados (se aplicável)
 
 ## 4. Padrão de Merge (Squash and Merge)
 
