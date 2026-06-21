@@ -14,6 +14,9 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
+from fastapi import HTTPException, status
+from sqlalchemy.exc import OperationalError
+
 logger = logging.getLogger(__name__)
 
 # Lê a URL de conexão do arquivo .env
@@ -54,21 +57,36 @@ Base = declarative_base()
 def get_db():
     """
     Dependency do FastAPI: Fornece uma session de banco por requisição.
-    Garante que a conexão seja fechada corretamente após cada requisição,
-    mesmo em caso de erro.
+    Garante que a conexão seja fechada corretamente após cada requisição.
+    Se o banco estiver indisponível (OperationalError), converte em
+    HTTPException 503 para o cliente, em vez de vazar um erro 500 genérico.
 
     Yields:
         Session: Session de banco de dados.
+
+    Raises:
+        HTTPException 503: Se o banco de dados estiver indisponível.
     """
-    db = sessionlocal()
+    db = None
     try:
+        db = sessionlocal()
         yield db
         logger.debug("Session de banco de dados fechada com sucesso")
-    except Exception as e:
+    except OperationalError as e:
+        logger.exception("Banco de dados indisponível: %s", e)
+        if db:
+            db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço de banco de dados indisponível. Tente novamente em instantes.",
+        ) from e
+    except Exception as e:  # pylint: disable=broad-except
         logger.exception("Erro durante a operação com o banco de dados: %s", e)
-        db.rollback()
+        if db:
+            db.rollback()
         raise
     finally:
-        db.close()
+        if db:
+            db.close()
 
-# @file Fim do arquivo database.py
+# @file Fim do arquivo svc-orcamento/app/database.py

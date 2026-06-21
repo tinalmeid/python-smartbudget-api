@@ -21,7 +21,8 @@ class OrcamentoCreate(BaseModel):
     categoria_id: int = Field(..., description="ID da categoria associada")
     limite: Decimal = Field(..., gt=0, decimal_places=2,
                             description="Limite máximo para a categoria no mês")
-    mes_ano: str = Field(..., description="Mês e ano para o qual o orçamento é definido (formato YYYY-MM)")
+    mes_ano: str = Field(
+        ..., description="Mês e ano para o qual o orçamento é definido (formato YYYY-MM)")
     """
 
     categoria_id: int = Field(..., description="ID da categoria associada")
@@ -29,12 +30,15 @@ class OrcamentoCreate(BaseModel):
                             description="Limite máximo para a categoria no mês")
     mes_ano: str = Field(pattern=r"^\d{4}-\d{2}$",
                          description="Mês e ano para o qual o orçamento é definido (formato YYYY-MM)")
+    alerta_em: int = Field(
+        default=80, ge=1, le=100,
+        description="Percentual do limite que dispara o alerta (padrão: 80%)")
 
     @field_validator("mes_ano")
     @classmethod
     def validar_mes_ano(cls, value: str) -> str:
         """
-       Valida se mes_ano está no formato YYYY-MM e se o mês é válido.
+        Valida se mes_ano está no formato YYYY-MM e se o mês é válido.
 
        Args:
            value: Valor do campo mes_ano.
@@ -71,8 +75,10 @@ class OrcamentoOut(BaseModel):
                               description="Chave estrangeira para a categoria associada.")
     limite: Decimal = Field(..., gt=0, decimal_places=2,
                             description="Valor do limite mensal definido para a categoria")
-    mes_ano: str = Field(
-        ..., description="Mês e ano para o qual o orçamento é definido (formato YYYY-MM)")
+    mes_ano: str = Field(...,
+                         description="Mês e ano para o qual o orçamento é definido (formato YYYY-MM)")
+    alerta_em: int = Field(...,
+                           description="Percentual do limite que dispara o alerta")
 
     model_config = {
         "from_attributes": True

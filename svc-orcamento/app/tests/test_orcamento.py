@@ -6,8 +6,14 @@
 @date Maio 2026
 @Version 1.0.0
 """
+from datetime import date
+from decimal import Decimal
+
+from unittest.mock import patch, AsyncMock
+from app.kafka import kafka_producer
 
 from app.models.categoria import Categoria
+from app.models.transacao import Transacao
 
 
 class TestCategoria:
@@ -86,6 +92,27 @@ class TestTransacao:
         response = client.delete("/v1/transacoes/999")
         assert response.status_code == 404
 
+    def test_deletar_transacao_outro_usuario(self, client, db):
+        """Deve retornar 403 ao tentar deletar transação de outro usuário."""
+        self._cria_categoria(db)
+
+        # Cria transação direto no banco com usuario_id=2 (outro usuario)
+        transacao = Transacao(
+            usuario_id=2,
+            categoria_id=1,
+            valor=Decimal("50.00"),
+            descricao="Transação de outro usuário",
+            data_transacao=date(2026, 5, 1)
+        )
+        db.add(transacao)
+        db.commit()
+        db.refresh(transacao)
+
+        # Tenta deletar como usuario_id=1 (usuário autenticado via API)
+        response = client.delete(f"/v1/transacoes/{transacao.id}")
+
+        assert response.status_code == 403
+
 
 class TestOrcamento:
     """Testes para criação de orçamentos e resumo mensal."""
@@ -135,6 +162,89 @@ class TestOrcamento:
         response = client.get("/v1/orcamentos/resumo?mes=2026-05")
         assert response.status_code == 200
         assert len(response.json()) == 1
-        assert response.json()[0]["gasto_real"] == "50.00"
+
+    def test_resumo_mensal_por_categoria_calculo_correto(self, client, db):
+        """
+        Deve calcular corretamente o gasto real somado por categoria,
+        com múltiplas transações e múltiplas categorias no mesmo mês
+        """
+        categoria_alimentacao = Categoria(nome="Alimentação", tipo="variável")
+        categoria_transporte = Categoria(nome="Transporte", tipo="variável")
+        db.add_all([categoria_alimentacao, categoria_transporte])
+        db.commit()
+        db.refresh(categoria_alimentacao)
+        db.refresh(categoria_transporte)
+
+        transacoes = [
+            # Cria transações para Alimentação
+            Transacao(usuario_id=1, categoria_id=categoria_alimentacao.id,
+                      valor=Decimal("30.00"), descricao="Supermercado",
+                      data_transacao=date(2026, 5, 5)),
+            Transacao(usuario_id=1, categoria_id=categoria_alimentacao.id,
+                      valor=Decimal("20.00"), descricao="Padaria",
+                      data_transacao=date(2026, 5, 10)),
+            # Cria transação para Transporte
+            Transacao(usuario_id=1, categoria_id=categoria_transporte.id,
+                      valor=Decimal("15.00"), descricao="Uber",
+                      data_transacao=date(2026, 5, 12))
+        ]
+        db.add_all(transacoes)
+        db.commit()
+
+        response = client.post("/v1/orcamentos", json={
+            "categoria_id": categoria_alimentacao.id,
+            "limite": 200.00,
+            "mes_ano": "2026-05"
+        })
+        assert response.status_code == 201
+
+        response = client.post("/v1/orcamentos", json={
+            "categoria_id": categoria_transporte.id,
+            "limite": 100.00,
+            "mes_ano": "2026-05"
+        })
+        assert response.status_code == 201
+
+        response = client.get("/v1/orcamentos/resumo?mes=2026-05")
+
+        assert response.status_code == 200
+        resultado = response.json()
+        assert len(resultado) == 2
+
+        alimentacao = next(
+            r for r in resultado if r["categoria_nome"] == "Alimentação")
+        transporte = next(
+            r for r in resultado if r["categoria_nome"] == "Transporte")
+
+        assert alimentacao["gasto_real"] == "50.00"
+        assert transporte["gasto_real"] == "15.00"
+
+    @patch.object(kafka_producer, "publicar_orcamento_alerta", new_callable=AsyncMock)
+    def test_limite_alerta_publicado_kafka(self, mock_alerta, client, db):
+        """
+        Deve publicar evento orcamento.alerta no Kafka quando o gasto
+        atingir o percentual de alerta configurado no orcamento.
+        """
+        self._cria_categoria(db)
+
+        response_orcamento = client.post("/v1/orcamentos", json={
+            "categoria_id": 1,
+            "limite": 100.00,
+            "mes_ano": "2026-05"
+        })
+        assert response_orcamento.status_code == 201
+
+        response_transacao = client.post("/v1/transacoes/", json={
+            "categoria_id": 1,
+            "valor": 85.00,
+            "descricao": "Gasto alto para teste de alerta",
+            "data_transacao": "2026-05-15"
+        })
+        assert response_transacao.status_code == 201
+
+        mock_alerta.assert_called_once()
+        chamada = mock_alerta.call_args
+        assert chamada.kwargs["usuario_id"] == 1
+        assert chamada.kwargs["percentual_usado"] == 85.0
 
 # @file Fim do arquivo svc-orcamento/app/tests/test_orcamento.py

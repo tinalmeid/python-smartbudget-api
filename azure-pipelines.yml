@@ -170,20 +170,16 @@ jobs:
           echo "✅ Testes encontrados. Rodando com cobertura mínima de 80%..."
           pytest \
             --cov=svc-usuarios/app \
+            --cov=svc-orcamento/app \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing \
             --cov-fail-under=80 \
             -v
         else
-          echo "⚠️  Sem testes ainda — ARQ-453 setup only"
-          echo "ℹ️  Testes serão implementados a partir da ARQ-456"
+          echo "⚠️  Nenhum teste encontrado no repositório — verifique a estrutura de arquivos"
         fi
       condition: eq(variables['isPython'], 'true')
       displayName: '🧪 Testes Unitários + Cobertura >= 80%'
-
-    - script: |
-        cat coverage.xml | grep "filename"
-      displayName: '🔍 Debug coverage.xml paths'
 
     # ===============================================================================
     # PASSO 5 — SONARCLOUD
