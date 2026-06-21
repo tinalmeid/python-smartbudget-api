@@ -28,6 +28,7 @@ from fastapi import FastAPI
 # Local imports (módulos do projeto)
 from app.routers import transacoes, categorias, extrato, orcamentos
 from app.kafka import kafka_producer
+from app.kafka_consumer import kafka_consumer
 
 # Configura o logger para identificar o serviço
 logger = logging.getLogger(__name__)
@@ -40,8 +41,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(_: FastAPI):
     """Gerencia o ciclo de vida da aplicação."""
     await kafka_producer.start()
+    await kafka_consumer.start()
     yield
     await kafka_producer.stop()
+    await kafka_consumer.stop()
 
 # Inicializa o servidor FastAPI
 app = FastAPI(

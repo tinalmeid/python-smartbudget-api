@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.cache import cache_service
 from app.schemas.orcamento import OrcamentoCreate, OrcamentoOut
 from app.services.orcamento_service import OrcamentoService
 
@@ -41,8 +42,8 @@ def get_usuario_id() -> int:
 @router.post("", status_code=status.HTTP_201_CREATED)
 def criar_orcamento(
         dados: OrcamentoCreate,
-        db: Session = Depends(get_db),
-        usuario_id: int = Depends(get_usuario_id)
+        db: Session = Depends(get_db),  # NOSONAR
+        usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> OrcamentoOut:
     """
     Define um limite mensal por categoria.
@@ -59,14 +60,16 @@ def criar_orcamento(
 
 
 @router.get("/resumo")
-def resumo_mensal(
-        mes: str = Query(..., pattern=r"^\d{4}-\d{2}$",
-                         description="Mês no formato YYYY-MM"),
-        db: Session = Depends(get_db),
-        usuario_id: int = Depends(get_usuario_id)
+async def resumo_mensal(
+    mes: str = Query(..., pattern=r"^\d{4}-\d{2}$",
+                     description="Mês no formato YYYY-MM"),  # NOSONAR
+        db: Session = Depends(get_db),  # NOSONAR
+        usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> list[dict]:
     """
     Retorna o gasto real vs limite por categoria no mês informado.
+    Consulta o cache antes do banco (cache-aside) — cache HIT retorna
+    imediatamente, cache MISS consulta o banco e popula o cache.
 
     Args:
         mes: Mês no formato YYYY-MM
@@ -76,6 +79,18 @@ def resumo_mensal(
     Returns:
         list[dict]: Resumo financeiro mensal por categoria, incluindo limite, gasto real e status.
     """
-    return service.calcular_resumo(db, usuario_id, mes)
+    chave = cache_service.montar_chave(usuario_id, mes)
+
+    resultado_cache = await cache_service.get(chave)
+    if resultado_cache is not None:
+        logger.info("Cache HIT: %s", chave)
+        return resultado_cache
+
+    logger.info("Cache MISS: %s", chave)
+    resultado = service.calcular_resumo(db, usuario_id, mes)
+
+    await cache_service.set(chave, resultado)
+
+    return resultado
 
 # @file Fim do arquivo svc-orcamento/app/routers/orcamentos.py

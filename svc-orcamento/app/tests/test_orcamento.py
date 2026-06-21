@@ -7,9 +7,6 @@
 @Version 1.0.0
 """
 
-import pytest
-from fastapi.testclient import TestClient
-
 from app.models.categoria import Categoria
 
 
@@ -54,7 +51,7 @@ class TestTransacao:
         response = client.post("/v1/transacoes/", json=transacao_dados)
         assert response.status_code == 404
 
-    def test_criar_transacao_valor_zero(self, client, db, transacao_dados):
+    def test_criar_transacao_valor_zero(self, client, db):
         """Deve retornar 422 se o valor for zero."""
         self._cria_categoria(db)
         response = client.post("/v1/transacoes/", json={

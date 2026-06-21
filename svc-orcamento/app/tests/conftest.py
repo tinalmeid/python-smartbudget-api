@@ -135,7 +135,7 @@ def transacao_dados():
         "categoria_id": 1,
         "valor": 50.00,
         "descricao": "Almoço no restaurante",
-        "data": "2026-05-01",
+        "data_transacao": "2026-05-01",
     }
 
 
