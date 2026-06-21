@@ -19,7 +19,7 @@
 
 ![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=flat&logo=docker&logoColor=white)
 ![AWS](https://img.shields.io/badge/Cloud-AWS-FF9900?style=flat&logo=amazonaws&logoColor=white)
-![PlanetScale](https://img.shields.io/badge/BD-PlanetScale-000000?style=flat)
+![Neon](https://img.shields.io/badge/BD-Neon_PostgreSQL-00E699?style=flat&logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Cache-Redis-DC382D?style=flat&logo=redis&logoColor=white)
 ![Kafka](https://img.shields.io/badge/Mensageria-Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)
 
@@ -58,7 +58,7 @@ Cliente (Mobile/Web)
                 ▼
           Kafka (Confluent Cloud)
           Redis (Cache)
-          PlanetScale MySQL (1 banco por serviço)
+          Neon PostgreSQL (schemas separados por serviço)
           AWS S3 (artefatos MLflow)
 ```
 
@@ -146,6 +146,31 @@ http://localhost:8004/docs  — svc-notificacoes
 {"importadas": 3, "erros": [{"linha": 5, "erro": "valor inválido"}]}
 ```
 
+## ⚡ Cache Redis no Resumo Mensal
+
+**Endpoint:** `GET /v1/orcamentos/resumo?mes=YYYY-MM`
+
+**Estratégia:** cache-aside com TTL de 1 hora
+
+| Item | Valor |
+| --- | --- |
+| Chave | `resumo:{usuario_id}:{mes}` |
+| TTL | 3600s (1 hora) |
+| Invalidação | Evento `transacao.criada` do Kafka apaga a chave correspondente |
+| Fallback | Se o Redis falhar, a consulta cai direto no banco sem erro |
+
+```text
+GET /resumo
+    │
+    ▼
+Cache HIT? ──Sim──▶ retorna do Redis (rápido)
+    │
+   Não
+    │
+    ▼
+Consulta o banco ──▶ salva no cache ──▶ retorna
+```
+
 ## 🧪 Testes
 
 ```bash
@@ -201,7 +226,8 @@ Todas as variáveis estão documentadas em `.env.example`. As mais importantes:
 | Variável | Descrição | Exemplo |
 | --- | --- | --- |
 | `SECRET_KEY` | Chave JWT (gere com `secrets.token_hex(32)`) | `abc123...` |
-| `DB_USUARIOS_URL` | URL PlanetScale do svc-usuarios | `mysql+pymysql://...` |
+| `DB_USUARIOS_URL` | URL Neon do svc-usuarios | `postgresql://...?sslmode=require` |
+| `REDIS_URL` | Endereço do Redis para cache | `redis://localhost:6379/0` |
 | `KAFKA_BOOTSTRAP_SERVERS` | Endereço Confluent Cloud | `pkc-xxx:9092` |
 | `DATADOG_API_KEY` | API Key do Datadog | `dd_api_...` |
 | `AWS_ACCESS_KEY_ID` | Credencial AWS para S3/ECR | `AKIA...` |
@@ -231,8 +257,8 @@ Consulte os guias em `docs/`:
 | **ARQ-458** | 📊 Datadog APM | `ARQ-458-chore/datadog-apm-setup` | ✅ Concluído |
 | **ARQ-459** | 💰 svc-orcamento — CRUD transações e metas | `ARQ-459-feat/svc-orcamento-crud` | ✅ Concluído |
 | **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | ✅ Concluído |
-| **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | 🔄 Em Andamento |
-| **ARQ-462** | ⚡ Cache Redis TTL 1h no GET /resumo | `ARQ-462-feat/redis-cache-resumo` | 📝 A Fazer |
+| **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | ✅ Concluído |
+| **ARQ-462** | ⚡ Cache Redis TTL 1h no GET /resumo | `ARQ-462-feat/redis-cache-resumo` | ✅ Concluído |
 | **ARQ-463** | 🧪 Testes svc-orcamento | `ARQ-463-test/svc-orcamento` | 📝 A Fazer |
 | **ARQ-464** | 🌐 Confluent Cloud e dashboards Grafana | `ARQ-464-chore/confluent-grafana-setup` | 📝 A Fazer |
 | **ARQ-465** | 🤖 Treinar modelo Prophet e registrar no MLflow | `ARQ-465-feat/prophet-mlflow-training` | 📝 A Fazer |

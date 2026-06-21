@@ -19,6 +19,8 @@ Contexto da decisão — o que motivou essa mudança.
 
 ## Evidências
 
-- Pipeline: <link do run ou número do build>
-- Cobertura: XX% (🟢 >= 80% / 🟡 60–80% / ⚪ N/A)
-- SonarCloud: 🟢 Quality Gate verde / ⚪ N/A
+- Pipeline: <`link do run ou número do build`>
+- Cobertura: XX%
+    (🟢 >= 80% / 🟡 60–80% / ⚪ N/A)
+- SonarCloud:
+    (🟢 Quality Gate verde / ⚪ N/A)
