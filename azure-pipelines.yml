@@ -138,6 +138,22 @@ jobs:
     # ===============================================================================
     - script: |
         echo "📦 Verificando dependências dos microsserviços..."
+         pip install --upgrade pip
+
+        FOUND=0
+        for svc in svc-usuarios svc-orcamento svc-previsao svc-notificacoes; do
+          if [ -f "$svc/requirements.txt" ]; then
+            echo "  → Instalando $svc/requirements.txt"
+            pip install -r $svc/requirements.txt
+            FOUND=1
+          fi
+        done
+
+        if [ $FOUND -eq 0 ]; then
+          echo "⚠️  Nenhum requirements.txt encontrado — ARQ-453 setup only"
+        fi
+
+        echo "📦 Instalando libs de teste..."
         pip install pytest pytest-asyncio pytest-cov httpx
 
         # Corrige conflito conhecido entre os pacotes "multipart" e
