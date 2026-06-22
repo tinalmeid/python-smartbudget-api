@@ -1,0 +1,11 @@
+data,descricao,valor,tipo
+2026-05-01,Almoço no restaurante,50.00,débito
+2026-05-01,Almoço Delivery,50.00,débito
+2026-05-02,Salário,5000.00,crédito
+2026-05-03,Uber,25.50,débito
+2026-05-04,Mercado,150.00,débito
+2026-05-01,Jantar Aniversário Mãe,90.00,débito
+2026-05-04,Farmárcia,150.00,débito
+2026-05-05,Celular,90.00,débito
+2026-05-05,valor inválido,abc,débito
+31/05/2026,data inválida,30.00,débito

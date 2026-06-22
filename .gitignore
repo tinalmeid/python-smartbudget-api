@@ -71,3 +71,6 @@ data/raw/
 data/processed/
 *.csv
 !svc-*/app/tests/fixtures/*.csv
+
+# Exceção: fixtures de teste precisam estar versionadas
+!svc-orcamento/app/tests/extrato_teste.csv

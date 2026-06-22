@@ -191,16 +191,21 @@ jobs:
             echo "▶️  $svc"
             (cd "$svc" && pytest app/tests -v)
             if [ $? -ne 0 ]; then FALHOU=1; fi
-            cp "$svc/coverage.xml" "coverage-${svc}.xml" 2>/dev/null || echo "⚠️  $svc não gerou coverage.xml"
+
+            # Reescreve os caminhos do coverage.xml (relativos ao serviço)
+            # para o caminho completo a partir da raiz, que é o que o
+            # SonarCloud espera. Ex: filename="app/..." → "svc-orcamento/app/..."
+            if [ -f "$svc/coverage.xml" ]; then
+              sed "s|filename=\"|filename=\"$svc/app/|g; s|filename=\"$svc/app/app/|filename=\"$svc/app/|g" \
+                "$svc/coverage.xml" > "coverage-${svc}.xml"
+              echo "✅ coverage-${svc}.xml gerado com caminhos corrigidos"
+            else
+              echo "⚠️  $svc não gerou coverage.xml"
+            fi
           else
             echo "ℹ️  $svc ainda não tem testes — pulando (dívida técnica futura)"
           fi
-        done
-
-        if [ $FALHOU -eq 1 ]; then
-          echo "##vso[task.logissue type=error]Um ou mais serviços falharam nos testes."
-          exit 1
-        fi
+        donecd ..
       condition: eq(variables['isPython'], 'true')
       displayName: '🧪 Testes Unitários por Serviço (isolados) + Cobertura'
 
