@@ -164,22 +164,39 @@ jobs:
     # A partir da ARQ-456, os testes existem e a cobertura >= 80% é exigida.
     # ===============================================================================
     - script: |
-        echo "🧪 Verificando testes..."
+        echo "🧪 Verificando testes por serviço..."
+        FALHOU=0
 
-        if find . -name "test_*.py" | grep -q .; then
-          echo "✅ Testes encontrados. Rodando com cobertura mínima de 80%..."
-          pytest \
-            --cov=svc-usuarios/app \
-            --cov=svc-orcamento/app \
-            --cov-report=xml:coverage.xml \
-            --cov-report=term-missing \
-            --cov-fail-under=80 \
-            -v
+        # svc-usuarios usa o pytest.ini da raiz (cobertura >= 80%)
+
+        if find svc-usuarios -name "test_*.py" 2>/dev/null | grep -q .; then
+
+          echo "▶️  svc-usuarios"
+          pytest -v
+          if [ $? -ne 0 ]; then FALHOU=1; fi
         else
-          echo "⚠️  Nenhum teste encontrado no repositório — verifique a estrutura de arquivos"
+          echo "ℹ️  svc-usuarios ainda sem testes"
+        fi
+
+        # Demais serviços rodam isolados, cada um com seu próprio pyproject.toml/pytest.ini
+
+        for svc in svc-orcamento svc-previsao svc-notificacoes; do
+          if [ -f "$svc/requirements.txt" ] && find "$svc" -name "test_*.py" 2>/dev/null | grep -q .; then
+            echo "▶️  $svc"
+            (cd "$svc" && pytest app/tests -v)
+            if [ $? -ne 0 ]; then FALHOU=1; fi
+            cp "$svc/coverage.xml" "coverage-${svc}.xml" 2>/dev/null || echo "⚠️  $svc não gerou coverage.xml"
+          else
+            echo "ℹ️  $svc ainda não tem testes — pulando (dívida técnica futura)"
+          fi
+        done
+
+        if [ $FALHOU -eq 1 ]; then
+          echo "##vso[task.logissue type=error]Um ou mais serviços falharam nos testes."
+          exit 1
         fi
       condition: eq(variables['isPython'], 'true')
-      displayName: '🧪 Testes Unitários + Cobertura >= 80%'
+      displayName: '🧪 Testes Unitários por Serviço (isolados) + Cobertura'
 
     # ===============================================================================
     # PASSO 5 — SONARCLOUD
