@@ -138,7 +138,7 @@ jobs:
     # ===============================================================================
     - script: |
         echo "📦 Verificando dependências dos microsserviços..."
-         pip install --upgrade pip
+        pip install --upgrade pip
 
         FOUND=0
         for svc in svc-usuarios svc-orcamento svc-previsao svc-notificacoes; do
@@ -161,6 +161,7 @@ jobs:
         # garante que a versão correta esteja instalada antes dos testes
         pip uninstall -y multipart 2>/dev/null || true
         pip install --force-reinstall python-multipart==0.0.20
+
       condition: eq(variables['isPython'], 'true')
       displayName: '📦 Instalar Dependências (4 microsserviços)'
 
@@ -174,9 +175,7 @@ jobs:
         FALHOU=0
 
         # svc-usuarios usa o pytest.ini da raiz (cobertura >= 80%)
-
         if find svc-usuarios -name "test_*.py" 2>/dev/null | grep -q .; then
-
           echo "▶️  svc-usuarios"
           pytest -v
           if [ $? -ne 0 ]; then FALHOU=1; fi
@@ -185,7 +184,6 @@ jobs:
         fi
 
         # Demais serviços rodam isolados, cada um com seu próprio pyproject.toml/pytest.ini
-
         for svc in svc-orcamento svc-previsao svc-notificacoes; do
           if [ -f "$svc/requirements.txt" ] && find "$svc" -name "test_*.py" 2>/dev/null | grep -q .; then
             echo "▶️  $svc"
@@ -194,9 +192,9 @@ jobs:
 
             # Reescreve os caminhos do coverage.xml (relativos ao serviço)
             # para o caminho completo a partir da raiz, que é o que o
-            # SonarCloud espera. Ex: filename="app/..." → "svc-orcamento/app/..."
+            # SonarCloud espera. Ex: filename="services/..." → "svc-orcamento/app/services/..."
             if [ -f "$svc/coverage.xml" ]; then
-              sed "s|filename=\"|filename=\"$svc/app/|g; s|filename=\"$svc/app/app/|filename=\"$svc/app/|g" \
+              sed "s|filename=\"|filename=\"$svc/app/|g" \
                 "$svc/coverage.xml" > "coverage-${svc}.xml"
               echo "✅ coverage-${svc}.xml gerado com caminhos corrigidos"
             else
@@ -205,7 +203,12 @@ jobs:
           else
             echo "ℹ️  $svc ainda não tem testes — pulando (dívida técnica futura)"
           fi
-        donecd ..
+        done
+
+        if [ $FALHOU -eq 1 ]; then
+          echo "##vso[task.logissue type=error]Um ou mais serviços falharam nos testes."
+          exit 1
+        fi
       condition: eq(variables['isPython'], 'true')
       displayName: '🧪 Testes Unitários por Serviço (isolados) + Cobertura'
 
