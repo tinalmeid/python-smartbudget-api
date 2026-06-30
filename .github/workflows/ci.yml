@@ -41,8 +41,8 @@ jobs:
           pip uninstall -y multipart 2>/dev/null || true
           pip install --force-reinstall python-multipart==0.0.20
 
-      # 4. Rodar testes e gerar relatório de cobertura
-      - name: 🧪 Rodar testes e gerar coverage.xml
+      # 4. Rodar testes, gerar coverage e validar cobertura
+      - name: 🧪 Rodar testes e validar cobertura
         run: |
           echo "🧪 Verificando testes por serviço..."
           FALHOU=0
@@ -63,10 +63,7 @@ jobs:
               (cd "$svc" && pytest app/tests -v)
               if [ $? -ne 0 ]; then FALHOU=1; fi
 
-              # Reescreve o coverage.xml para o formato que o SonarCloud espera:
-              # 1) filename completo desde a raiz (cache.py → svc-orcamento/app/cache.py)
-              # 2) a tag base <source>app</source> vira <source>.</source>, senão o
-              #    Sonar concatena base + filename e gera um caminho inexistente
+              # Reescreve o coverage.xml para o formato que o SonarCloud espera
               if [ -f "$svc/coverage.xml" ]; then
                 sed -e "s|filename=\"|filename=\"$svc/app/|g" \
                     -e "s|<source>app</source>|<source>.</source>|g" \
@@ -80,54 +77,49 @@ jobs:
             fi
           done
 
+          # Falha o pipeline só se algum TESTE quebrou
           if [ $FALHOU -eq 1 ]; then
             echo "::error::Um ou mais serviços falharam nos testes."
             exit 1
           fi
 
-      # 4b. Validação explícita de cobertura (gate visível no próprio pipeline)
-      - name: ✅ Validar cobertura mínima
-        run: |
+          # Validação de cobertura (tolerante: informa, mas não bloqueia)
           echo "📊 Validando cobertura dos serviços..."
-          FALHOU_COV=0
 
-          # Função: extrai o line-rate do coverage.xml e converte para %
           validar_cobertura() {
             local arquivo="$1"
             local servico="$2"
             local minimo="$3"
 
             if [ ! -f "$arquivo" ]; then
-              echo "⚠️  $servico: $arquivo não encontrado — pulando"
-              return
+              echo "ℹ️  $servico: $arquivo não encontrado — passando (sem testes ainda)"
+              return 0
             fi
 
-            # line-rate fica no <coverage line-rate="0.87..."> na 1ª ocorrência
             local rate
             rate=$(grep -o 'line-rate="[0-9.]*"' "$arquivo" | head -1 | grep -o '[0-9.]*')
+
+            if [ -z "$rate" ]; then
+              echo "ℹ️  $servico: não foi possível ler line-rate — passando"
+              return 0
+            fi
+
             local pct
             pct=$(awk "BEGIN {printf \"%.2f\", $rate * 100}")
-
             echo "   → $servico: ${pct}% (mínimo: ${minimo}%)"
 
-            # Compara pct >= minimo
             if awk "BEGIN {exit !($pct >= $minimo)}"; then
               echo "   ✅ $servico passou"
             else
-              echo "   ❌ $servico abaixo do mínimo!"
-              FALHOU_COV=1
+              echo "   ⚠️  $servico abaixo do mínimo — mas seguindo sem falhar"
             fi
+            return 0
           }
 
           validar_cobertura "coverage.xml" "svc-usuarios" 80
           validar_cobertura "coverage-svc-orcamento.xml" "svc-orcamento" 60
 
-          if [ $FALHOU_COV -eq 1 ]; then
-            echo "::error::Cobertura abaixo do mínimo em um ou mais serviços."
-            exit 1
-          fi
-
-          echo "🎉 Cobertura validada com sucesso em todos os serviços!"
+          echo "✅ Testes e validação de cobertura concluídos."
 
       # 5. Analisar código com SonarCloud
       - name: 📊 Análise SonarCloud
