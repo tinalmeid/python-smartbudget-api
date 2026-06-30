@@ -63,11 +63,13 @@ jobs:
               (cd "$svc" && pytest app/tests -v)
               if [ $? -ne 0 ]; then FALHOU=1; fi
 
-              # Reescreve os caminhos do coverage.xml (relativos ao serviço)
-              # para o caminho completo a partir da raiz, que é o que o
-              # SonarCloud espera. Ex: filename="services/..." → "svc-orcamento/app/services/..."
+              # Reescreve o coverage.xml para o formato que o SonarCloud espera:
+              # 1) filename completo desde a raiz (cache.py → svc-orcamento/app/cache.py)
+              # 2) a tag base <source>app</source> vira <source>.</source>, senão o
+              #    Sonar concatena base + filename e gera um caminho inexistente
               if [ -f "$svc/coverage.xml" ]; then
-                sed "s|filename=\"|filename=\"$svc/app/|g" \
+                sed -e "s|filename=\"|filename=\"$svc/app/|g" \
+                    -e "s|<source>app</source>|<source>.</source>|g" \
                   "$svc/coverage.xml" > "coverage-${svc}.xml"
                 echo "✅ coverage-${svc}.xml gerado com caminhos corrigidos"
               else
@@ -83,10 +85,9 @@ jobs:
             exit 1
           fi
 
-
       # 5. Analisar código com SonarCloud
       - name: 📊 Análise SonarCloud
-        uses: SonarSource/sonarcloud-github-action@master # NOSONAR
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -107,16 +108,16 @@ jobs:
 
       # 7. Configurar AWS CLI com credenciais seguras
       - name: 🛠️ Configurar AWS
-        uses: aws-actions/configure-aws-credentials@v4 # NOSONAR
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # NOSONAR
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # NOSONAR
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       # 8. Login no ECR para poder pushar as imagens Docker
       - name: 🖥️ Login no ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2 # NOSONAR
+        uses: aws-actions/amazon-ecr-login@v2
 
       # 9. Build e push das imagens Docker para o ECR
       - name: 🏗️ Build e push das imagens
@@ -134,11 +135,11 @@ jobs:
 
       # 10. Conectar via SSH na instância EC2 e atualizar os containers Docker
       - name: 🚀 Deploy no EC2
-        uses: appleboy/ssh-action@v1 # NOSONAR
+        uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.EC2_HOST }} # NOSONAR
+          host: ${{ secrets.EC2_HOST }}
           username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }} # NOSONAR
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /app/python-smartbudget-api
             docker compose pull
