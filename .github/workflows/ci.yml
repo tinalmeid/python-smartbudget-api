@@ -85,6 +85,50 @@ jobs:
             exit 1
           fi
 
+      # 4b. Validação explícita de cobertura (gate visível no próprio pipeline)
+      - name: ✅ Validar cobertura mínima
+        run: |
+          echo "📊 Validando cobertura dos serviços..."
+          FALHOU_COV=0
+
+          # Função: extrai o line-rate do coverage.xml e converte para %
+          validar_cobertura() {
+            local arquivo="$1"
+            local servico="$2"
+            local minimo="$3"
+
+            if [ ! -f "$arquivo" ]; then
+              echo "⚠️  $servico: $arquivo não encontrado — pulando"
+              return
+            fi
+
+            # line-rate fica no <coverage line-rate="0.87..."> na 1ª ocorrência
+            local rate
+            rate=$(grep -o 'line-rate="[0-9.]*"' "$arquivo" | head -1 | grep -o '[0-9.]*')
+            local pct
+            pct=$(awk "BEGIN {printf \"%.2f\", $rate * 100}")
+
+            echo "   → $servico: ${pct}% (mínimo: ${minimo}%)"
+
+            # Compara pct >= minimo
+            if awk "BEGIN {exit !($pct >= $minimo)}"; then
+              echo "   ✅ $servico passou"
+            else
+              echo "   ❌ $servico abaixo do mínimo!"
+              FALHOU_COV=1
+            fi
+          }
+
+          validar_cobertura "coverage.xml" "svc-usuarios" 80
+          validar_cobertura "coverage-svc-orcamento.xml" "svc-orcamento" 60
+
+          if [ $FALHOU_COV -eq 1 ]; then
+            echo "::error::Cobertura abaixo do mínimo em um ou mais serviços."
+            exit 1
+          fi
+
+          echo "🎉 Cobertura validada com sucesso em todos os serviços!"
+
       # 5. Analisar código com SonarCloud
       - name: 📊 Análise SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
