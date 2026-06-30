@@ -37,13 +37,63 @@ jobs:
 
           pip install pytest pytest-asyncio pytest-cov httpx
 
-      # 4. Rodar testes e gerar relatório de cobertura
+          # Instalar python-multipart 0.0.20 para evitar conflito com FastAPI 0.100.0
+          pip uninstall -y multipart 2>/dev/null || true
+          pip install --force-reinstall python-multipart==0.0.20
+
+      # 4. Rodar testes por serviço (isolados) e gerar coverage
       - name: 🧪 Rodar testes e gerar coverage.xml
         run: |
-          if find . -name "test_*.py" | grep -q .; then
-            pytest
+          echo "🧪 Verificando testes por serviço..."
+          FALHOU=0
+
+          # svc-usuarios usa o pytest.ini da raiz (gera coverage.xml na raiz)
+          if find svc-usuarios -name "test_*.py" 2>/dev/null | grep -q .; then
+            echo "▶️  svc-usuarios"
+            pytest -v
+            if [ $? -ne 0 ]; then FALHOU=1; fi
           else
-            echo "🏷️ Sem testes ainda — ARQ-453 setup only. Task ARQ-556 deve rodar automaticamente"
+            echo "ℹ️  svc-usuarios ainda sem testes"
+          fi
+
+          # svc-orcamento roda DA RAIZ com --cov apontando o caminho completo.
+          # Isso gera <source>svc-orcamento/app</source> + filename curto,
+          # combinação que o SonarCloud resolve sozinho (sem precisar de sed).
+          if [ -f "svc-orcamento/requirements.txt" ] && find svc-orcamento -name "test_*.py" 2>/dev/null | grep -q .; then
+            echo "▶️  svc-orcamento"
+            pytest svc-orcamento/app/tests \
+              --cov=svc-orcamento/app \
+              --cov-config=.coveragerc \
+              --cov-report=xml:coverage-svc-orcamento.xml \
+              --cov-report=term-missing \
+              --cov-fail-under=60 \
+              -p no:cacheprovider \
+              -v
+            if [ $? -ne 0 ]; then FALHOU=1; fi
+            echo "✅ coverage-svc-orcamento.xml gerado (caminho completo, sem sed)"
+          else
+            echo "ℹ️  svc-orcamento ainda não tem testes"
+          fi
+
+          # svc-previsao e svc-notificacoes: ainda não existem (ARQ-466/468)
+          for svc in svc-previsao svc-notificacoes; do
+            if [ -f "$svc/requirements.txt" ] && find "$svc" -name "test_*.py" 2>/dev/null | grep -q .; then
+              echo "▶️  $svc"
+              pytest "$svc/app/tests" \
+                --cov="$svc/app" \
+                --cov-config=.coveragerc \
+                --cov-report=xml:"coverage-${svc}.xml" \
+                -p no:cacheprovider \
+                -v
+              if [ $? -ne 0 ]; then FALHOU=1; fi
+            else
+              echo "ℹ️  $svc ainda não tem testes — pulando (dívida técnica futura)"
+            fi
+          done
+
+          if [ $FALHOU -eq 1 ]; then
+            echo "::error::Um ou mais serviços falharam nos testes."
+            exit 1
           fi
 
       # 5. Analisar código com SonarCloud

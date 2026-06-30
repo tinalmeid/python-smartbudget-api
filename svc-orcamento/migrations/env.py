@@ -54,7 +54,10 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        include_name=lambda name, type_, parent_names: True if type_ == "schema" and name == "orcamento" else name is None,
+        include_schemas=True,
+        include_name=lambda name, type_, parent_names: (
+            name == "orcamento" if type_ == "schema" else True
+        )
     )
 
     with context.begin_transaction():
@@ -73,7 +76,10 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            include_name=lambda name, type_, parent_names: True if type_ == "schema" and name == "orcamento" else name is None,
+            include_schemas=True,
+            include_name=lambda name, type_, parent_names: (
+                name == "orcamento" if type_ == "schema" else True
+            )
         )
 
         with context.begin_transaction():

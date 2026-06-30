@@ -17,6 +17,7 @@ from app.kafka import kafka_producer
 from app.database import get_db
 from app.schemas.transacao import TransacaoCreate, TransacaoOut
 from app.services.transacao_service import TransacaoService
+from app.services.orcamento_service import OrcamentoService
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ router = APIRouter(
 )
 
 service = TransacaoService()
+orcamento_service = OrcamentoService()
 
 
 def get_usuario_id() -> int:
@@ -47,8 +49,8 @@ async def criar_transacao(
         usuario_id: int = Depends(get_usuario_id)  # NOSONAR
 ) -> TransacaoOut:
     """
-    Registra uma nova transação financeira.
-    E publica evento no Kafka.
+    Registra uma nova transação financeira, publica evento no Kafka e
+    verifica se o gasto da categoria atingiu o percentual de alerta.
 
     Args:
         dados: Dados validados
@@ -67,6 +69,17 @@ async def criar_transacao(
         categoria_id=transacao.categoria_id,
         data_transacao=str(transacao.data_transacao),
     )
+
+    mes_ano = str(transacao.data_transacao)[:7]  # Extrai YYYY-MM
+    alerta = orcamento_service.verificar_alerta(
+        db, usuario_id, transacao.categoria_id, mes_ano)
+
+    if alerta:
+        await kafka_producer.publicar_orcamento_alerta(
+            usuario_id=usuario_id,
+            categoria_id=transacao.categoria_id,
+            percentual_usado=alerta["percentual_usado"]
+        )
 
     return transacao
 

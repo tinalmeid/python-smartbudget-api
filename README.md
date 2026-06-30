@@ -259,7 +259,7 @@ Consulte os guias em `docs/`:
 | **ARQ-460** | 📄 Importação de extrato bancário via CSV | `ARQ-460-feat/importar-extrato-csv` | ✅ Concluído |
 | **ARQ-461** | 📨 Kafka producer — eventos transacao e orcamento | `ARQ-461-feat/kafka-producer-orcamento` | ✅ Concluído |
 | **ARQ-462** | ⚡ Cache Redis TTL 1h no GET /resumo | `ARQ-462-feat/redis-cache-resumo` | ✅ Concluído |
-| **ARQ-463** | 🧪 Testes svc-orcamento | `ARQ-463-test/svc-orcamento` | 📝 A Fazer |
+| **ARQ-463** | 🧪 Testes svc-orcamento | `ARQ-463-test/svc-orcamento` | ✅ Concluído |
 | **ARQ-464** | 🌐 Confluent Cloud e dashboards Grafana | `ARQ-464-chore/confluent-grafana-setup` | 📝 A Fazer |
 | **ARQ-465** | 🤖 Treinar modelo Prophet e registrar no MLflow | `ARQ-465-feat/prophet-mlflow-training` | 📝 A Fazer |
 | **ARQ-466** | 🔮 svc-previsao — endpoints predict e Circuit Breaker | `ARQ-466-feat/svc-previsao-endpoints` | 📝 A Fazer |

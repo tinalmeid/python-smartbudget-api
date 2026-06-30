@@ -11,6 +11,7 @@
 
 import logging
 from decimal import Decimal
+from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -121,6 +122,55 @@ class OrcamentoService:
             })
 
         return resumo
+
+    def verificar_alerta(
+            self,
+            db: Session,
+            usuario_id: int,
+            categoria_id: int,
+            mes_ano: str
+    ) -> Optional[dict]:
+        """
+        Verifica se o gasto de uma categoria atingiu o percentual de alerta definido no orçamento do mês.
+
+        Args:
+            db: Sessão do banco de dados.
+            usuario_id: ID do usuário proprietário do orçamento.
+            categoria_id: ID da categoria para verificar o alerta.
+            mes_ano: Mês e ano do orçamento (formato YYYY-MM).
+        Returns:
+            Optional[dict]: Dados do alerta (categoria_id, percentual_usado) se o percentual foia atingido,
+            ou None se não houver orçamento para a categoria/mês ou se o percentual não tiver sido atingido.
+        """
+        orcamento = (
+            db.query(Orcamento)
+            .filter_by(
+                usuario_id=usuario_id,
+                categoria_id=categoria_id,
+                mes_ano=mes_ano
+            )
+            .first()
+        )
+
+        if not orcamento:
+            return None
+
+        ano, mes = mes_ano.split("-")
+        gasto = self._calcular_gasto(
+            db, usuario_id, categoria_id, int(ano), int(mes))
+
+        if orcamento.limite <= 0:
+            return None
+
+        percentual_usado = round((gasto / orcamento.limite) * 100, 2)
+
+        if percentual_usado < orcamento.alerta_em:
+            return None
+
+        return {
+            "categoria_id": categoria_id,
+            "percentual_usado": percentual_usado
+        }
 
     def _calcular_gasto(
             self,

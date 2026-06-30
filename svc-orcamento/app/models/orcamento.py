@@ -43,6 +43,9 @@ class Orcamento(Base):
         'orcamento.categorias.id'), nullable=False)
     limite = Column(Numeric(10, 2), nullable=False)
     mes_ano = Column(String(7), nullable=False)  # Formato YYYY-MM
+    # O Valor padrão é 80, representando o alerta de gasto próximo do limite (80% do limite)
+    # Mas o usuário pode configurar esse valor para receber alertas personalizados
+    alerta_em = Column(Integer, nullable=True, server_default="80")
 
     # Relacionamento com Categoria
     categoria = relationship("Categoria", back_populates="orcamentos")

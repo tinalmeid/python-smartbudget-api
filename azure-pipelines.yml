@@ -155,6 +155,13 @@ jobs:
 
         echo "📦 Instalando libs de teste..."
         pip install pytest pytest-asyncio pytest-cov httpx
+
+        # Corrige conflito conhecido entre os pacotes "multipart" e
+        # "python-multipart" (compartilham o mesmo módulo interno) —
+        # garante que a versão correta esteja instalada antes dos testes
+        pip uninstall -y multipart 2>/dev/null || true
+        pip install --force-reinstall python-multipart==0.0.20
+
       condition: eq(variables['isPython'], 'true')
       displayName: '📦 Instalar Dependências (4 microsserviços)'
 
@@ -164,52 +171,49 @@ jobs:
     # A partir da ARQ-456, os testes existem e a cobertura >= 80% é exigida.
     # ===============================================================================
     - script: |
-        echo "🧪 Verificando testes..."
+        echo "🧪 Verificando testes por serviço..."
+        FALHOU=0
 
-        if find . -name "test_*.py" | grep -q .; then
-          echo "✅ Testes encontrados. Rodando com cobertura mínima de 80%..."
-          pytest \
-            --cov=svc-usuarios/app \
-            --cov-report=xml:coverage.xml \
-            --cov-report=term-missing \
-            --cov-fail-under=80 \
-            -v
+        # svc-usuarios usa o pytest.ini da raiz (cobertura >= 80%)
+        if find svc-usuarios -name "test_*.py" 2>/dev/null | grep -q .; then
+          echo "▶️  svc-usuarios"
+          pytest -v
+          if [ $? -ne 0 ]; then FALHOU=1; fi
         else
-          echo "⚠️  Sem testes ainda — ARQ-453 setup only"
-          echo "ℹ️  Testes serão implementados a partir da ARQ-456"
+          echo "ℹ️  svc-usuarios ainda sem testes"
+        fi
+
+        # Demais serviços rodam isolados, cada um com seu próprio pyproject.toml/pytest.ini
+        for svc in svc-orcamento svc-previsao svc-notificacoes; do
+          if [ -f "$svc/requirements.txt" ] && find "$svc" -name "test_*.py" 2>/dev/null | grep -q .; then
+            echo "▶️  $svc"
+            (cd "$svc" && pytest app/tests -v)
+            if [ $? -ne 0 ]; then FALHOU=1; fi
+
+            # Reescreve os caminhos do coverage.xml (relativos ao serviço)
+            # para o caminho completo a partir da raiz, que é o que o
+            # SonarCloud espera. Ex: filename="services/..." → "svc-orcamento/app/services/..."
+            if [ -f "$svc/coverage.xml" ]; then
+              sed "s|filename=\"|filename=\"$svc/app/|g" \
+                "$svc/coverage.xml" > "coverage-${svc}.xml"
+              echo "✅ coverage-${svc}.xml gerado com caminhos corrigidos"
+            else
+              echo "⚠️  $svc não gerou coverage.xml"
+            fi
+          else
+            echo "ℹ️  $svc ainda não tem testes — pulando (dívida técnica futura)"
+          fi
+        done
+
+        if [ $FALHOU -eq 1 ]; then
+          echo "##vso[task.logissue type=error]Um ou mais serviços falharam nos testes."
+          exit 1
         fi
       condition: eq(variables['isPython'], 'true')
-      displayName: '🧪 Testes Unitários + Cobertura >= 80%'
-
-    - script: |
-        cat coverage.xml | grep "filename"
-      displayName: '🔍 Debug coverage.xml paths'
+      displayName: '🧪 Testes Unitários por Serviço (isolados) + Cobertura'
 
     # ===============================================================================
-    # PASSO 5 — SONARCLOUD
-    # Análise estática: bugs, vulnerabilidades, code smells e cobertura
-    # ===============================================================================
-    - task: SonarCloudPrepare@4
-      condition: eq(variables['isPython'], 'true')
-      inputs:
-        SonarCloud: '$(SONAR_SERVICE_CONNECTION)'
-        organization: '$(SONAR_ORGANIZATION)'
-        scannerMode: 'CLI'
-        configMode: 'file'
-      displayName: '☁️  SonarCloud — Preparar Análise'
-
-    - task: SonarCloudAnalyze@4
-      condition: eq(variables['isPython'], 'true')
-      displayName: '☁️  SonarCloud — Executar Análise'
-
-    - task: SonarCloudPublish@4
-      condition: eq(variables['isPython'], 'true')
-      inputs:
-        pollingTimeoutSec: '300'
-      displayName: '☁️  SonarCloud — Publicar Quality Gate'
-
-    # ===============================================================================
-    # PASSO 7a — OBSERVABILIDADE: SUCESSO
+    # PASSO 5a — OBSERVABILIDADE: SUCESSO
     # Envia métricas para Datadog, logs para Loki e métricas para Prometheus.
     # || true garante que falha de observabilidade não quebra o pipeline.
     # ===============================================================================
@@ -297,7 +301,7 @@ jobs:
         DD_API_KEY: $(DATADOG_API_KEY)
 
     # ===============================================================================
-    # PASSO 7b — OBSERVABILIDADE: FALHA
+    # PASSO 5b — OBSERVABILIDADE: FALHA
     # Silêncio não é OK em observabilidade — falha também gera sinal.
     # ===============================================================================
     - script: |
