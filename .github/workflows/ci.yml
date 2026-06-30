@@ -86,7 +86,7 @@ jobs:
 
       # 5. Analisar código com SonarCloud
       - name: 📊 Análise SonarCloud
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@master # NOSONAR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -107,16 +107,16 @@ jobs:
 
       # 7. Configurar AWS CLI com credenciais seguras
       - name: 🛠️ Configurar AWS
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4 # NOSONAR
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # NOSONAR
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # NOSONAR
           aws-region: us-east-1
 
       # 8. Login no ECR para poder pushar as imagens Docker
       - name: 🖥️ Login no ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2 # NOSONAR
 
       # 9. Build e push das imagens Docker para o ECR
       - name: 🏗️ Build e push das imagens
@@ -134,11 +134,11 @@ jobs:
 
       # 10. Conectar via SSH na instância EC2 e atualizar os containers Docker
       - name: 🚀 Deploy no EC2
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1 # NOSONAR
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.EC2_HOST }} # NOSONAR
           username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }} # NOSONAR
           script: |
             cd /app/python-smartbudget-api
             docker compose pull

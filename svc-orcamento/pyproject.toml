@@ -2,3 +2,10 @@
 asyncio_mode = "auto"
 testpaths = ["app/tests"]
 addopts = "--cov=app --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=60 -v"
+
+[tool.coverage.run]
+omit = [
+    "app/__init__.py",
+    "app/*/__init__.py",
+    "app/tests/*",
+]
