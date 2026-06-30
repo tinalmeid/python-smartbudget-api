@@ -41,8 +41,8 @@ jobs:
           pip uninstall -y multipart 2>/dev/null || true
           pip install --force-reinstall python-multipart==0.0.20
 
-      # 4. Rodar testes, gerar coverage e validar cobertura
-      - name: 🧪 Rodar testes e validar cobertura
+      # 4. Rodar testes por serviço (isolados) e gerar coverage
+      - name: 🧪 Rodar testes e gerar coverage.xml
         run: |
           echo "🧪 Verificando testes por serviço..."
           FALHOU=0
@@ -56,70 +56,45 @@ jobs:
             echo "ℹ️  svc-usuarios ainda sem testes"
           fi
 
-          # Demais serviços rodam isolados, cada um com seu próprio pyproject.toml
-          for svc in svc-orcamento svc-previsao svc-notificacoes; do
+          # svc-orcamento roda DA RAIZ com --cov apontando o caminho completo.
+          # Isso gera <source>svc-orcamento/app</source> + filename curto,
+          # combinação que o SonarCloud resolve sozinho (sem precisar de sed).
+          if [ -f "svc-orcamento/requirements.txt" ] && find svc-orcamento -name "test_*.py" 2>/dev/null | grep -q .; then
+            echo "▶️  svc-orcamento"
+            pytest svc-orcamento/app/tests \
+              --cov=svc-orcamento/app \
+              --cov-config=.coveragerc \
+              --cov-report=xml:coverage-svc-orcamento.xml \
+              --cov-report=term-missing \
+              --cov-fail-under=60 \
+              -p no:cacheprovider \
+              -v
+            if [ $? -ne 0 ]; then FALHOU=1; fi
+            echo "✅ coverage-svc-orcamento.xml gerado (caminho completo, sem sed)"
+          else
+            echo "ℹ️  svc-orcamento ainda não tem testes"
+          fi
+
+          # svc-previsao e svc-notificacoes: ainda não existem (ARQ-466/468)
+          for svc in svc-previsao svc-notificacoes; do
             if [ -f "$svc/requirements.txt" ] && find "$svc" -name "test_*.py" 2>/dev/null | grep -q .; then
               echo "▶️  $svc"
-              (cd "$svc" && pytest app/tests -v)
+              pytest "$svc/app/tests" \
+                --cov="$svc/app" \
+                --cov-config=.coveragerc \
+                --cov-report=xml:"coverage-${svc}.xml" \
+                -p no:cacheprovider \
+                -v
               if [ $? -ne 0 ]; then FALHOU=1; fi
-
-              # Reescreve o coverage.xml para o formato que o SonarCloud espera
-              if [ -f "$svc/coverage.xml" ]; then
-                sed -e "s|filename=\"|filename=\"$svc/app/|g" \
-                    -e "s|<source>app</source>|<source>.</source>|g" \
-                  "$svc/coverage.xml" > "coverage-${svc}.xml"
-                echo "✅ coverage-${svc}.xml gerado com caminhos corrigidos"
-              else
-                echo "⚠️  $svc não gerou coverage.xml"
-              fi
             else
               echo "ℹ️  $svc ainda não tem testes — pulando (dívida técnica futura)"
             fi
           done
 
-          # Falha o pipeline só se algum TESTE quebrou
           if [ $FALHOU -eq 1 ]; then
             echo "::error::Um ou mais serviços falharam nos testes."
             exit 1
           fi
-
-          # Validação de cobertura (tolerante: informa, mas não bloqueia)
-          echo "📊 Validando cobertura dos serviços..."
-
-          validar_cobertura() {
-            local arquivo="$1"
-            local servico="$2"
-            local minimo="$3"
-
-            if [ ! -f "$arquivo" ]; then
-              echo "ℹ️  $servico: $arquivo não encontrado — passando (sem testes ainda)"
-              return 0
-            fi
-
-            local rate
-            rate=$(grep -o 'line-rate="[0-9.]*"' "$arquivo" | head -1 | grep -o '[0-9.]*')
-
-            if [ -z "$rate" ]; then
-              echo "ℹ️  $servico: não foi possível ler line-rate — passando"
-              return 0
-            fi
-
-            local pct
-            pct=$(awk "BEGIN {printf \"%.2f\", $rate * 100}")
-            echo "   → $servico: ${pct}% (mínimo: ${minimo}%)"
-
-            if awk "BEGIN {exit !($pct >= $minimo)}"; then
-              echo "   ✅ $servico passou"
-            else
-              echo "   ⚠️  $servico abaixo do mínimo — mas seguindo sem falhar"
-            fi
-            return 0
-          }
-
-          validar_cobertura "coverage.xml" "svc-usuarios" 80
-          validar_cobertura "coverage-svc-orcamento.xml" "svc-orcamento" 60
-
-          echo "✅ Testes e validação de cobertura concluídos."
 
       # 5. Analisar código com SonarCloud
       - name: 📊 Análise SonarCloud
