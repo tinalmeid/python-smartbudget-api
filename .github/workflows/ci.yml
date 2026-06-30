@@ -37,14 +37,52 @@ jobs:
 
           pip install pytest pytest-asyncio pytest-cov httpx
 
+          # Instalar python-multipart 0.0.20 para evitar conflito com FastAPI 0.100.0
+          pip uninstall -y multipart 2>/dev/null || true
+          pip install --force-reinstall python-multipart==0.0.20
+
       # 4. Rodar testes e gerar relatório de cobertura
       - name: 🧪 Rodar testes e gerar coverage.xml
         run: |
-          if find . -name "test_*.py" | grep -q .; then
-            pytest
+          echo "🧪 Verificando testes por serviço..."
+          FALHOU=0
+
+          # svc-usuarios usa o pytest.ini da raiz (gera coverage.xml na raiz)
+          if find svc-usuarios -name "test_*.py" 2>/dev/null | grep -q .; then
+            echo "▶️  svc-usuarios"
+            pytest -v
+            if [ $? -ne 0 ]; then FALHOU=1; fi
           else
-            echo "🏷️ Sem testes ainda — ARQ-453 setup only. Task ARQ-556 deve rodar automaticamente"
+            echo "ℹ️  svc-usuarios ainda sem testes"
           fi
+
+          # Demais serviços rodam isolados, cada um com seu próprio pyproject.toml
+          for svc in svc-orcamento svc-previsao svc-notificacoes; do
+            if [ -f "$svc/requirements.txt" ] && find "$svc" -name "test_*.py" 2>/dev/null | grep -q .; then
+              echo "▶️  $svc"
+              (cd "$svc" && pytest app/tests -v)
+              if [ $? -ne 0 ]; then FALHOU=1; fi
+
+              # Reescreve os caminhos do coverage.xml (relativos ao serviço)
+              # para o caminho completo a partir da raiz, que é o que o
+              # SonarCloud espera. Ex: filename="services/..." → "svc-orcamento/app/services/..."
+              if [ -f "$svc/coverage.xml" ]; then
+                sed "s|filename=\"|filename=\"$svc/app/|g" \
+                  "$svc/coverage.xml" > "coverage-${svc}.xml"
+                echo "✅ coverage-${svc}.xml gerado com caminhos corrigidos"
+              else
+                echo "⚠️  $svc não gerou coverage.xml"
+              fi
+            else
+              echo "ℹ️  $svc ainda não tem testes — pulando (dívida técnica futura)"
+            fi
+          done
+
+          if [ $FALHOU -eq 1 ]; then
+            echo "::error::Um ou mais serviços falharam nos testes."
+            exit 1
+          fi
+
 
       # 5. Analisar código com SonarCloud
       - name: 📊 Análise SonarCloud

@@ -213,30 +213,7 @@ jobs:
       displayName: '🧪 Testes Unitários por Serviço (isolados) + Cobertura'
 
     # ===============================================================================
-    # PASSO 5 — SONARCLOUD
-    # Análise estática: bugs, vulnerabilidades, code smells e cobertura
-    # ===============================================================================
-    - task: SonarCloudPrepare@4
-      condition: eq(variables['isPython'], 'true')
-      inputs:
-        SonarCloud: '$(SONAR_SERVICE_CONNECTION)'
-        organization: '$(SONAR_ORGANIZATION)'
-        scannerMode: 'CLI'
-        configMode: 'file'
-      displayName: '☁️  SonarCloud — Preparar Análise'
-
-    - task: SonarCloudAnalyze@4
-      condition: eq(variables['isPython'], 'true')
-      displayName: '☁️  SonarCloud — Executar Análise'
-
-    - task: SonarCloudPublish@4
-      condition: eq(variables['isPython'], 'true')
-      inputs:
-        pollingTimeoutSec: '300'
-      displayName: '☁️  SonarCloud — Publicar Quality Gate'
-
-    # ===============================================================================
-    # PASSO 7a — OBSERVABILIDADE: SUCESSO
+    # PASSO 5a — OBSERVABILIDADE: SUCESSO
     # Envia métricas para Datadog, logs para Loki e métricas para Prometheus.
     # || true garante que falha de observabilidade não quebra o pipeline.
     # ===============================================================================
@@ -324,7 +301,7 @@ jobs:
         DD_API_KEY: $(DATADOG_API_KEY)
 
     # ===============================================================================
-    # PASSO 7b — OBSERVABILIDADE: FALHA
+    # PASSO 5b — OBSERVABILIDADE: FALHA
     # Silêncio não é OK em observabilidade — falha também gera sinal.
     # ===============================================================================
     - script: |
